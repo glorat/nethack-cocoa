@@ -7,9 +7,10 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - Monsters and objects on lit room floor are drawn over the floor instead of on black.
 - The click that brings the window to the front no longer also moves your character.
 - Clicking a distant square you haven't explored no longer starts travel there. Position prompts such as `;` still accept those squares.
-- Stairs, ladders, drawbridges and open doors are redrawn closer to the classic tiles. Stairs and ladders have an arrow for the direction, and open doors sit flush in the wall.
+- Stairs, ladders, drawbridges and open doors are redrawn closer to the classic tiles. Stairs and ladders have an arrow for the direction, and doors sit flush in the wall. A trapped door is the ordinary closed door with a red rune.
 - Engravings look like faint scratches on the floor instead of a stone slab.
 - Walls fill their whole square, so there's no dark gap between a wall and the room beside it.
+- Wand and spell beams are drawn sharply at full size instead of enlarged from the 16px tiles, and each kind looks different: lightning is jagged, poison gas is a haze, death is a dark ray.
 - Water looks like a deeper version of a pool or moat, and lava, ice, air and cloud are calmer across large areas.
 - The download is about 30 MB smaller, because the painted tiles now use 256 colours.
 
