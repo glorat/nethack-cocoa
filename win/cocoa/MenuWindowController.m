@@ -650,6 +650,7 @@ static BUC_ENUM GetBUC( NSString * text )
 
 	// loop through menu items and create labels/button for everything
 	int row = 0;
+	NSMutableIndexSet * spanningRows = [NSMutableIndexSet indexSet];
 	for ( NhItemGroup * group in [menuParams itemGroups] ) {
 		
 		NSString * title = [group title];
@@ -670,18 +671,16 @@ static BUC_ENUM GetBUC( NSString * text )
 
 		// create title attributed string
 		for ( NSString * text in [title componentsSeparatedByString:@"\t"] ) {
-			NSTextField * label = [[NSTextField alloc] initWithFrame:rect];
-			[label setObjectValue:text];
-			[label setEditable:NO];
-			[label setDrawsBackground:NO];
-			[label setBordered:NO];
+			NSTextField * label = [NSTextField labelWithString:text];
 			[label setFont:groupFont];
-			[label sizeToFit];
 			[columns addObject:label];
 		}
 		[gridView addRowWithViews:columns];
 		if ( row == 0 ) {
 			[gridView removeRowAtIndex:0];
+		}
+		if ( columns.count == 1 ) {
+			[spanningRows addIndex:gridView.numberOfRows - 1];
 		}
 		++row;
 
@@ -756,6 +755,8 @@ static BUC_ENUM GetBUC( NSString * text )
 			// set button title
 			[button setAttributedTitle:aString];
 			[button sizeToFit];
+			// with a tile in the title, the button under-reports its width and wraps
+			[button.widthAnchor constraintGreaterThanOrEqualToConstant:button.frame.size.width].active = YES;
 
 			[columns addObject:button];
 
@@ -765,12 +766,7 @@ static BUC_ENUM GetBUC( NSString * text )
 #endif
 
 			for ( int column = 1; column < fields.count; ++column ) {
-				NSTextField * label = [[NSTextField alloc] initWithFrame:rect];
-				[label setObjectValue:fields[column]];
-				[label setEditable:NO];
-				[label setDrawsBackground:NO];
-				[label setBordered:NO];
-				[label sizeToFit];
+				NSTextField * label = [NSTextField labelWithString:fields[column]];
 				[columns addObject:label];
 			}
 			[gridView addRowWithViews:columns];
@@ -778,6 +774,29 @@ static BUC_ENUM GetBUC( NSString * text )
 				[gridView removeRowAtIndex:0];
 			}
 			++row;
+		}
+	}
+
+	// the column left from the XIB has a fixed width
+	for ( NSInteger c = 0; c < gridView.numberOfColumns; ++c ) {
+		[gridView columnAtIndex:c].width = NSGridViewSizeForContent;
+	}
+
+	// a title on its own spans the row, and spare width goes to the last column
+	if ( gridView.numberOfColumns > 1 ) {
+		[spanningRows enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
+			NSGridRow * gridRow = [gridView rowAtIndex:idx];
+			NSView * label = [gridRow cellAtIndex:0].contentView;
+			[gridRow mergeCellsInRange:NSMakeRange(0, gridView.numberOfColumns)];
+			[label setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+			[gridView.widthAnchor constraintGreaterThanOrEqualToConstant:label.intrinsicContentSize.width].active = YES;
+		}];
+		for ( NSInteger c = 0; c < gridView.numberOfColumns - 1; ++c ) {
+			for ( NSInteger r = 0; r < gridView.numberOfRows; ++r ) {
+				if ( ![spanningRows containsIndex:r] ) {
+					[[gridView cellAtColumnIndex:c rowIndex:r].contentView setContentHuggingPriority:500 forOrientation:NSLayoutConstraintOrientationHorizontal];
+				}
+			}
 		}
 	}
 
