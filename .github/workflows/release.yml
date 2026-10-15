@@ -1,64 +1,49 @@
 name: Release
 
+# Tags are v<NetHack version>-<revision of this app>, e.g. v5.0.0-1.
 on:
   push:
-    branches: [nethack-5.0]
     tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+      build_number: ${{ steps.parse.outputs.build_number }}
+    steps:
+      - id: parse
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)$ ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME is not of the form v5.0.0-1"
+            exit 1
+          fi
+          echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          echo "build_number=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+
   build:
-    runs-on: macos-15
+    needs: version
+    uses: ./.github/workflows/ci.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      build_number: ${{ needs.version.outputs.build_number }}
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: true
-
-      - name: Version
-        id: version
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            version="${GITHUB_REF_NAME#v}"
-          else
-            version="0.0.0-dev"
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Build
-        run: >
-          make -C win/cocoa
-          ARCHFLAGS="-arch arm64 -arch x86_64"
-          VERSION=${{ steps.version.outputs.version }}
-          BUILD_NUMBER=${{ github.run_number }}
-
-      - name: Check
-        run: |
-          app=win/cocoa/build/NetHack.app
-          lipo -archs "$app/Contents/MacOS/NetHack" | grep -q x86_64
-          lipo -archs "$app/Contents/MacOS/NetHack" | grep -q arm64
-          codesign --verify --deep "$app"
-          test "$(head -c 4 win/cocoa/Resources/tiles/tiles128.png | xxd -p)" = 89504e47
-
-      - name: Package
-        id: package
-        run: |
-          zip="NetHack-${{ steps.version.outputs.version }}-macOS.zip"
-          ditto -c -k --keepParent win/cocoa/build/NetHack.app "$zip"
-          echo "zip=$zip" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/upload-artifact@v4
+          sparse-checkout: .github
+      - uses: actions/download-artifact@v4
         with:
-          name: ${{ steps.package.outputs.zip }}
-          path: ${{ steps.package.outputs.zip }}
-
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
+          name: app
+      - env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" \
-            --title "NetHack ${{ steps.version.outputs.version }} for macOS" \
+          gh release create "$GITHUB_REF_NAME" "${{ needs.build.outputs.zip }}" \
+            --title "NetHack ${{ needs.version.outputs.version }} for macOS (release ${{ needs.version.outputs.build_number }})" \
             --notes-file .github/release-notes.md

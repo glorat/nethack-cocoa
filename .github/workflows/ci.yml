@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      build_number:
+        type: string
+        required: true
+    outputs:
+      zip:
+        value: ${{ jobs.build.outputs.zip }}
+
+jobs:
+  build:
+    runs-on: macos-15
+    outputs:
+      zip: ${{ steps.package.outputs.zip }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # LFS downloads count against the repo's bandwidth quota, so reuse them.
+      - name: List LFS objects
+        run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-objects
+      - uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-objects') }}
+      - name: Fetch LFS objects
+        run: git lfs pull
+
+      - name: Build
+        env:
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
+        run: |
+          args=(ARCHFLAGS="-arch arm64 -arch x86_64" BUILD_NUMBER="$BUILD_NUMBER")
+          if [ -n "$VERSION" ]; then args+=(VERSION="$VERSION"); fi
+          make -C win/cocoa "${args[@]}"
+
+      - name: Check
+        run: |
+          app=win/cocoa/build/NetHack.app
+          lipo -archs "$app/Contents/MacOS/NetHack" | grep -q x86_64
+          lipo -archs "$app/Contents/MacOS/NetHack" | grep -q arm64
+          codesign --verify --deep "$app"
+          test "$(head -c 4 win/cocoa/Resources/tiles/tiles128.png | xxd -p)" = 89504e47
+
+      - name: Package
+        id: package
+        env:
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+        run: |
+          if [ -n "$VERSION" ]; then label="$VERSION-$BUILD_NUMBER"; else label="dev-${GITHUB_SHA:0:7}"; fi
+          zip="NetHack-$label-macOS.zip"
+          ditto -c -k --keepParent win/cocoa/build/NetHack.app "$zip"
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app
+          path: ${{ steps.package.outputs.zip }}
+          retention-days: 14

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A fork of NetHack whose real purpose is the native macOS Cocoa front end in `win/cocoa/` (originally by Dirk Zimmermann). This branch (`nethack-5.0`) carries the NetHack 5.0.0 core, merged from upstream's `NetHack-5.0.0_Released` tag; `master` is the older 3.6.6 version. Nearly all work is in `win/cocoa/`; the rest of the tree is the upstream core (`src/`, `include/`, `util/`, `dat/`) plus other platform/window ports (`sys/*`, `win/*`) that aren't used by this build. Keep core edits minimal and behind `#ifdef COCOA_GRAPHICS` so upstream merges stay easy.
+A fork of NetHack whose real purpose is the native macOS Cocoa front end in `win/cocoa/` (originally by Dirk Zimmermann). `main` carries the NetHack 5.0.0 core, merged from upstream's `NetHack-5.0.0_Released` tag; `nethack-3.6` is the older 3.6.6 version and is not maintained. Work goes on short-lived branches merged into `main`. Nearly all work is in `win/cocoa/`; the rest of the tree is the upstream core (`src/`, `include/`, `util/`, `dat/`) plus other platform/window ports (`sys/*`, `win/*`) that aren't used by this build. Keep core edits minimal and behind `#ifdef COCOA_GRAPHICS` so upstream merges stay easy.
 
 ## Building
 
@@ -31,7 +31,8 @@ Gotchas:
 - New core source files in a future upstream merge must be added to `CORE_SRC`.
 - The minimum macOS is 12.0 (`MACOSX_DEPLOYMENT_TARGET`), the lowest Xcode 27's SDK supports. Make doesn't notice a change to it, `ARCHFLAGS` or `VERSION`: run `make -C win/cocoa clean` first.
 - Local builds are for this Mac's architecture. Releases pass `ARCHFLAGS="-arch arm64 -arch x86_64"` for a universal app, plus `VERSION` and `BUILD_NUMBER` for `Info.plist`.
-- `.github/workflows/release.yml` builds the universal app on a GitHub macOS runner. Pushing a `v*` tag (e.g. `v5.0.0`) publishes a GitHub Release with the zipped app and `.github/release-notes.md`; pushes to `nethack-5.0` and manual runs only upload the zip as a workflow artifact. The app is ad-hoc signed, not notarized, so users approve it once with Open Anyway.
+- `.github/workflows/ci.yml` builds and checks the universal app on a GitHub macOS runner for pushes to `main` and pull requests, uploading the zip as a workflow artifact. It caches LFS objects, since LFS downloads count against the repo's quota.
+- Releases are made by tag only, never by pushes to `main`. Tags are `v<NetHack version>-<app revision>`, e.g. `v5.0.0-1`, then `v5.0.0-2`; the revision restarts at 1 for a new NetHack version. Pushing one runs `.github/workflows/release.yml`, which reuses `ci.yml` (`VERSION` 5.0.0, `BUILD_NUMBER` 1) and publishes a GitHub Release with the zip and `.github/release-notes.md`. The app is ad-hoc signed, not notarized, so users approve it once with Open Anyway.
 - `tile2bmp` rejects long output paths, so the sheet is written in `util/` and then moved.
 
 There are no tests and no linter. `.clang-format` (LLVM-based, 4-space indent, 78 cols, no tabs) and `DEVEL/code_style.txt` describe upstream's C style; the Cocoa Objective-C files use their own older style (tabs). Match the file you're editing.
