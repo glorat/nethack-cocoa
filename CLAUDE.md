@@ -57,11 +57,7 @@ To run with options and skip the role picker: `NETHACKOPTIONS="role:Valkyrie,rac
 
 ## Core integration points
 
-All under `COCOA_GRAPHICS`. Grep for it when the core behaves differently under this port:
-- `include/config.h`: `CHDIR` is not defined.
-- `include/winprocs.h` / `src/windows.c`: the `wp_cocoa` id and the `cocoa_procs` entry in `winchoices`.
-- `include/extern.h`: the `nethack_exit` prototype.
-- `sys/unix/unixmain.c`: `main` is renamed `unixmain`. After `early_init` it `chdir`s to the bundle's resource directory (`cocoa_resource_dir()`, i.e. `+[WinCocoa baseFilePath]`) and calls `set_fqn_prefixes()`.
+Core edits are all under `COCOA_GRAPHICS`; grep for it when the core behaves differently under this port. `sys/unix/unixmain.c`'s `main` is renamed `unixmain`, and after `early_init` it `chdir`s to the bundle's resource directory (`cocoa_resource_dir()`) and calls `set_fqn_prefixes()`.
 
 `DEFAULT_WINDOW_SYS "cocoa"`, `NOCWD_ASSUMPTIONS` (needed so the file prefixes are honoured), `SYSCF`, `DLB` and `NOMAIL` come from `NHDEFS` in the Makefile, not from `config.h`.
 
