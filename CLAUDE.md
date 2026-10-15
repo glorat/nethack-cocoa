@@ -8,26 +8,17 @@ A fork of NetHack whose real purpose is the native macOS Cocoa front end in `win
 
 ## Building
 
-The build path for this branch is `win/cocoa/Makefile`. The Xcode project `win/cocoa/NetHack.xcodeproj` is still the 3.6 one and does not build against the 5.0 core.
-
-One-time setup from the top of the tree builds upstream's pieces the app links against or bundles (Lua library, `makedefs`, `dlb`, `dat/nhdat`, `util/tilemap`, `util/tile2bmp`):
+The only build path is `win/cocoa/Makefile` (there is no Xcode project). From a fresh checkout:
 
 ```sh
-(cd sys/unix && sh setup.sh hints/macOS.500) && make fetch-lua && make all
-```
-
-`make all` also builds upstream's tty `src/nethack`; that's a side effect, not something the app uses. Its `expr: syntax error` messages are harmless.
-
-Then build the app:
-
-```sh
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer make -C win/cocoa   # -> win/cocoa/build/NetHack.app
+make -C win/cocoa   # -> win/cocoa/build/NetHack.app
 open win/cocoa/build/NetHack.app
 ```
 
-`DEVELOPER_DIR` is needed unless full Xcode is selected with `xcode-select`: `ibtool` (XIB compilation) isn't in the Command Line Tools. A fresh Xcode also needs `sudo xcodebuild -license accept` and `xcodebuild -runFirstLaunch`. The app is ad-hoc signed; no signing identity is needed.
+Full Xcode must be installed at `/Applications/Xcode.app`, because `ibtool` (XIB compilation) isn't in the Command Line Tools. The Makefile sets `DEVELOPER_DIR` itself when `xcode-select` points at the Command Line Tools. A fresh Xcode also needs `sudo xcodebuild -license accept` and `xcodebuild -runFirstLaunch`. The app is ad-hoc signed; no signing identity is needed.
 
 The Makefile:
+- Its `core` step runs upstream's build from the top of the tree: `sys/unix/setup.sh hints/macOS.500` (once), `make fetch-lua` (once, downloads Lua), then `make all` every time (incremental). That provides `lib/lua/liblua-*.a`, `dat/nhdat`, `makedefs`, `dlb`, `util/tilemap` and `util/tile2bmp`. It also builds upstream's tty `src/nethack`, which the app doesn't use. Its `expr: syntax error` messages are harmless.
 - Compiles core `src/*.c` (the list is `CORE_SRC`), `sys/unix/{unixmain,unixres,unixunix}.c`, `sys/share/posixregex.c`, and the Cocoa `*.c`/`*.m`/`iHack/*.m` (ARC), then links with `lib/lua/liblua-*.a`.
 - Generates `src/tile.c` via `util/Makefile` and the tile sheet `build/tiles16.bmp` via `tile2bmp`.
 - Compiles `en.lproj/*.xib`, builds the icon, fills `NetHack-Info.plist` (bundle id `net.hack.cocoa.NetHack5`, version 5.0.0), copies `nhdat`/`license`/`symbols`/`sysconf`/images into `Resources`, and codesigns with `NetHack.entitlements`.
@@ -37,7 +28,8 @@ Gotchas:
 - `NHDEFS` in the Makefile must match the feature flags `util/tilemap` sees, `NOMAIL` especially. A mismatch doesn't fail the build; it misaligns the glyph→tile map and shows the wrong tiles.
 - Include order is `-I. -IiHack -I$(TOP)/include` because the Cocoa `TileSet.h` and core `tileset.h` collide on the case-insensitive filesystem.
 - New core source files in a future upstream merge must be added to `CORE_SRC`.
-- The linker warns that `liblua` was built for a newer macOS than the app's 12.0 minimum (upstream's hints don't set a deployment target). Harmless on the build machine.
+- The minimum macOS is 12.0 (`MACOSX_DEPLOYMENT_TARGET`), the lowest Xcode 27's SDK supports. It is exported so upstream's Lua build, whose hints set no target, matches. Make doesn't notice a target change: after changing it, delete `lib/lua/*.a` and `lib/lua-*/src/*.o` so Lua rebuilds, or the link warns.
+- `tile2bmp` rejects long output paths, so the sheet is written in `util/` and then moved.
 
 There are no tests and no linter. `.clang-format` (LLVM-based, 4-space indent, 78 cols, no tabs) and `DEVEL/code_style.txt` describe upstream's C style; the Cocoa Objective-C files use their own older style (tabs). Match the file you're editing.
 

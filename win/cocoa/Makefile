@@ -1,9 +1,6 @@
 # Builds NetHack.app (Cocoa window port) against the NetHack 5.0 core.
-#
-# Prerequisites, run once from the top of the tree:
-#   (cd sys/unix && sh setup.sh hints/macOS.500) && make fetch-lua && make all
-# which builds liblua, makedefs, dlb, nhdat and util/tilemap; this Makefile
-# then generates src/tile.c and the tile sheet and builds the app.
+# Runs upstream's setup.sh, fetch-lua and top-level build as needed for
+# liblua, nhdat and the util tools, then builds the app.
 #
 #   make -C win/cocoa          # -> win/cocoa/build/NetHack.app
 #   make -C win/cocoa run
@@ -18,7 +15,17 @@ CC       := xcrun clang
 IBTOOL   := xcrun ibtool
 ICONUTIL := iconutil
 
-MACOSX_DEPLOYMENT_TARGET ?= 12.0
+# Exported so upstream's liblua build (its hints set no target) matches the
+# app; an existing liblua must be rebuilt after changing this.
+export MACOSX_DEPLOYMENT_TARGET := 12.0
+
+# ibtool is only in full Xcode, not the Command Line Tools.
+ifeq ($(DEVELOPER_DIR),)
+ifneq ($(findstring CommandLineTools,$(shell xcode-select -p)),)
+export DEVELOPER_DIR := /Applications/Xcode.app/Contents/Developer
+endif
+endif
+
 ARCHFLAGS ?= -arch $(shell uname -m)
 
 # Must stay in step with the feature flags util/tilemap was built with
@@ -60,7 +67,8 @@ OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(CORE_SRC))) \
 	$(addprefix $(OBJDIR)/cocoa_,$(notdir $(COCOA_C:.c=.o))) \
 	$(addprefix $(OBJDIR)/cocoa_,$(notdir $(COCOA_M:.m=.o)))
 
-LUALIB := $(wildcard $(TOP)/lib/lua/liblua-*.a)
+LUA_VERSION := $(shell sed -n 's/^LUA_VERSION *= *//p' $(TOP)/sys/unix/Makefile.top)
+LUALIB := $(TOP)/lib/lua/liblua-$(LUA_VERSION).a
 
 XIBS := $(wildcard en.lproj/*.xib)
 NIBS := $(patsubst en.lproj/%.xib,$(CONTENTS)/Resources/en.lproj/%.nib,$(XIBS))
@@ -68,35 +76,43 @@ NIBS := $(patsubst en.lproj/%.xib,$(CONTENTS)/Resources/en.lproj/%.nib,$(XIBS))
 DATA := $(TOP)/dat/nhdat $(TOP)/dat/license $(TOP)/dat/symbols sysconf \
 	Credits.rtf $(wildcard Resources/images/*.png) $(BUILD)/tiles16.bmp
 
-.PHONY: all app run clean
+.PHONY: all app core run clean
 
 all: app
 
 app: $(CONTENTS)/MacOS/NetHack $(NIBS) $(CONTENTS)/Info.plist \
 	$(CONTENTS)/Resources/nethack.icns resources
 
+core:
+	@test -f $(TOP)/Makefile || (cd $(TOP)/sys/unix && sh setup.sh hints/macOS.500)
+	@test -f $(TOP)/lib/lua-$(LUA_VERSION)/src/lua.h || $(MAKE) -C $(TOP) fetch-lua
+	$(MAKE) -C $(TOP) all
+
+$(LUALIB) $(TOP)/dat/nhdat $(TOP)/dat/symbols: | core ;
+
 vpath %.c $(TOP)/src $(TOP)/sys/share $(TOP)/sys/unix
 
-$(OBJDIR)/%.o: %.c | $(OBJDIR)
+$(OBJDIR)/%.o: %.c | $(OBJDIR) core
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/cocoa_%.o: %.c | $(OBJDIR)
+$(OBJDIR)/cocoa_%.o: %.c | $(OBJDIR) core
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJDIR)/cocoa_%.o: %.m | $(OBJDIR)
+$(OBJDIR)/cocoa_%.o: %.m | $(OBJDIR) core
 	$(CC) $(OBJCFLAGS) -c $< -o $@
 
-$(OBJDIR)/cocoa_%.o: iHack/%.m | $(OBJDIR)
+$(OBJDIR)/cocoa_%.o: iHack/%.m | $(OBJDIR) core
 	$(CC) $(OBJCFLAGS) -c $< -o $@
 
 $(TOP)/src/tile.c: $(TOP)/win/share/tilemap.c $(TOP)/win/share/monsters.txt \
-	$(TOP)/win/share/objects.txt $(TOP)/win/share/other.txt
+	$(TOP)/win/share/objects.txt $(TOP)/win/share/other.txt | core
 	$(MAKE) -C $(TOP)/util ../src/tile.c
 
 $(BUILD)/tiles16.bmp: $(TOP)/win/share/monsters.txt $(TOP)/win/share/objects.txt \
-	$(TOP)/win/share/other.txt | $(BUILD)
+	$(TOP)/win/share/other.txt | $(BUILD) core
 	$(MAKE) -C $(TOP)/util tile2bmp
-	cd $(TOP)/util && ./tile2bmp $(CURDIR)/$@
+	cd $(TOP)/util && ./tile2bmp tiles16.bmp
+	mv $(TOP)/util/tiles16.bmp $@
 
 $(OBJDIR)/tile.o: $(TOP)/src/tile.c
 
