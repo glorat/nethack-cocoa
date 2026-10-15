@@ -574,7 +574,15 @@ int cocoa_nhgetch(void)
 
 int cocoa_nh_poskey(coordxy *x, coordxy *y, int *mod)
 {
+	static BOOL s_inventoryShown = NO;
+
 	//NSLog(@"nh_poskey");
+	// the core only reports inventory changes made inside the game loop,
+	// so the starting inventory has to be picked up here
+	if (!s_inventoryShown && program_state.in_moveloop) {
+		s_inventoryShown = YES;
+		cocoa_update_inventory(0);
+	}
 	[[MainWindowController instance] refreshAllViews];
 	NhEvent *e = [[NhEventQueue instance] nextEvent];
 	if (!e.isKeyEvent) {
