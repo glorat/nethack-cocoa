@@ -268,6 +268,8 @@ void nethack_exit(int status)
 	//	indicate were exiting
 	[[MainWindowController instance] nethackExited];
 
+	cocoa_prepare_for_exit();
+
 	// exit thread
 	[NSThread exit];
 }

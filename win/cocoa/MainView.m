@@ -463,8 +463,13 @@ NSString * DescriptionForTile( int x, int y )
 	// get tile info, but don't interfere with nethack thread
 	NetHackCocoaAppDelegate * appDelegate = [[NSApplication sharedApplication] delegate];
 	[appDelegate lockNethackCore];
-	InventoryOfTile(x, y, out_str);
+	// nh_terminate clears in_moveloop before it frees the level data
+	BOOL inGame = program_state.in_moveloop;
+	if ( inGame )
+		InventoryOfTile(x, y, out_str);
 	[appDelegate unlockNethackCore];
+	if ( !inGame )
+		return nil;
 
 	NSString * text = [NSString stringWithCString:out_str encoding:codepage437encoding];
 	
