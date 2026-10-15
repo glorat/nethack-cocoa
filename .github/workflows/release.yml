@@ -15,6 +15,11 @@ jobs:
       version: ${{ steps.parse.outputs.version }}
       build_number: ${{ steps.parse.outputs.build_number }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            CHANGELOG.md
       - id: parse
         run: |
           if [[ ! "$GITHUB_REF_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-([0-9]+)$ ]]; then
@@ -23,6 +28,7 @@ jobs:
           fi
           echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           echo "build_number=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+          .github/release-notes.sh "${GITHUB_REF_NAME#v}" > /dev/null
 
   build:
     needs: version
@@ -37,13 +43,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: |
+            .github
+            CHANGELOG.md
       - uses: actions/download-artifact@v4
         with:
           name: app
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          .github/release-notes.sh "${GITHUB_REF_NAME#v}" > notes.md
           gh release create "$GITHUB_REF_NAME" "${{ needs.build.outputs.zip }}" \
             --title "NetHack ${{ needs.version.outputs.version }} for macOS (release ${{ needs.version.outputs.build_number }})" \
-            --notes-file .github/release-notes.md
+            --notes-file notes.md
