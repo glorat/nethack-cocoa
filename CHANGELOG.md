@@ -9,6 +9,8 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - Clicking a distant square you haven't explored no longer starts travel there. Position prompts such as `;` still accept those squares.
 - Stairs, ladders, drawbridges and open doors are redrawn closer to the classic tiles. Stairs and ladders have an arrow for the direction, and open doors sit flush in the wall.
 - Engravings look like faint scratches on the floor instead of a stone slab.
+- Walls fill their whole square, so there's no dark gap between a wall and the room beside it.
+- Water looks like a deeper version of a pool or moat, and lava, ice, air and cloud are calmer across large areas.
 - The download is about 30 MB smaller, because the painted tiles now use 256 colours.
 
 ## 5.0.0-2 (2026-10-15)
