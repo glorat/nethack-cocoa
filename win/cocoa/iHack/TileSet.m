@@ -24,6 +24,9 @@
 
 #import "TileSet.h"
 #import <AppKit/AppKit.h>
+#include "hack.h"
+
+extern glyph_map glyphmap[MAX_GLYPH];
 
 static TileSet *s_instance = nil;
 
@@ -60,14 +63,14 @@ static TileSet *s_instance = nil;
 }
 
 - (NSRect)sourceRectForGlyph:(int)glyph {
-	int tile = glyph2tile[glyph];
+	int tile = glyphmap[glyph].tileidx;
 	return [self sourceRectForTile:tile];
 }
 
 - (NSRect)sourceRectForTile:(int)tile {
-	int row = rows - 1 - tile/columns;
 	int col = tile % columns;
-	NSRect r = { col * tileSize.width, row * tileSize.height };
+	// measured from the top: sheets need not be an exact multiple of the tile height
+	NSRect r = { col * tileSize.width, image.size.height - (tile/columns + 1) * tileSize.height };
 	r.size = tileSize;
 	return r;
 }

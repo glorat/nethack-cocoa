@@ -74,8 +74,8 @@ extern int unixmain(int argc, char **argv);
 	}
 #endif
 		
-	// set plname (very important for save files and getlock)
-	[[NSUserName() capitalizedString] getCString:plname maxLength:PL_NSIZ encoding:NSASCIIStringEncoding];
+	// set svp.plname (very important for save files and getlock)
+	[[NSUserName() capitalizedString] getCString:svp.plname maxLength:PL_NSIZ encoding:NSASCIIStringEncoding];
 	
 	// call NetHack
 	unixmain(g_argc, g_argv);

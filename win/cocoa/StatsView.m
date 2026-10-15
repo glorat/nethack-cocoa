@@ -77,7 +77,7 @@
 	// Dlvl:1 $:0 HP:16(16) Pw:2(2) AC:8 Xp:1/0 T:1
 	// Dlvl:8 $:0 HP:104(116) Pw:17(17) AC:-7 Xp:10/5729 Satiated Burdened Stun T:13845
 
-	nhsym goldch = showsyms[COIN_CLASS + SYM_OFF_O];
+	nhsym goldch = gs.showsyms[COIN_CLASS + SYM_OFF_O];
 	NSString * Gold = [NSString stringWithFormat:@"%c:", goldch];
 	
 	if ( [text rangeOfString:Gold].location != NSNotFound ) {
@@ -91,7 +91,7 @@
 		if ( [value hasPrefix:@"Dlvl:"] ) {
 			value = [value substringFromIndex:5];
 			value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-			NSString * nm = [NSString stringWithUTF8String:dungeons[u.uz.dnum].dname];
+			NSString * nm = [NSString stringWithUTF8String:svd.dungeons[u.uz.dnum].dname];
 			int lvl = dunlev( &u.uz );
 			if ( lvl == [value integerValue] ) {
 				value = [NSString stringWithFormat:@"%@: level %@", nm, value];
@@ -99,7 +99,7 @@
 				value = [NSString stringWithFormat:@"%@ %d: level %@", nm, lvl, value];
 			}
 		} else {
-			NSString * nm = [NSString stringWithUTF8String:dungeons[u.uz.dnum].dname];
+			NSString * nm = [NSString stringWithUTF8String:svd.dungeons[u.uz.dnum].dname];
 			value = [NSString stringWithFormat:@"%@: %@", nm, value];			
 		}
 		
@@ -200,7 +200,7 @@
 		
 		value = [[scanner string] substringFromIndex:[scanner scanLocation]];
 		value = [value stringByTrimmingCharactersInSet:whitespace];
-		value = [value stringByAppendingFormat:Upolyd?@" (%s) %s":@" %s %s", urace.adj, mons[u.umonnum].mname];
+		value = [value stringByAppendingFormat:Upolyd?@" (%s) %s":@" %s %s", gu.urace.adj, pmname(&mons[u.umonnum], Ugender)];
 		[role setStringValue:value];
 	}
 	return YES;

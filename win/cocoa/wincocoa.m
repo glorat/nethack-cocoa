@@ -56,6 +56,7 @@
 
 struct window_procs cocoa_procs = {
 "cocoa",
+wp_cocoa,
 WC_COLOR|WC_HILITE_PET|
 WC_ASCII_MAP|WC_TILED_MAP|
 WC_FONT_MAP|WC_TILE_FILE|WC_TILE_WIDTH|WC_TILE_HEIGHT|
@@ -81,8 +82,7 @@ cocoa_start_menu,
 cocoa_add_menu,
 cocoa_end_menu,
 cocoa_select_menu,
-genl_message_menu,	  /* no need for X-specific handling */
-cocoa_update_inventory,
+genl_message_menu,
 cocoa_mark_synch,
 cocoa_wait_synch,
 #ifdef CLIPPING
@@ -103,28 +103,23 @@ cocoa_getlin,
 cocoa_get_ext_cmd,
 cocoa_number_pad,
 cocoa_delay_output,
-#ifdef CHANGE_COLOR	 /* only a Mac option currently */
-donull,
-donull,
-#endif
-/* other defs that really should go away (they're tty specific) */
-cocoa_start_screen,
-cocoa_end_screen,
 cocoa_outrip,
 cocoa_preference_update,
 cocoa_getmsghistory,
 cocoa_putmsghistory,
-cocoa_status_init,
-cocoa_status_finish,
-cocoa_status_enablefield,
-cocoa_status_update,
-win_can_suspend
+genl_status_init,
+genl_status_finish,
+genl_status_enablefield,
+genl_status_update,
+win_can_suspend,
+cocoa_update_inventory,
+cocoa_ctrl_nhwindow,
 };
 
 
 static char s_baseFilePath[FQN_MAX_FILENAME];
 
-coord CoordMake(xchar i, xchar j) {
+coord CoordMake(coordxy i, coordxy j) {
 	coord c = {i,j};
 	return c;
 }
@@ -228,6 +223,11 @@ static NSMutableDictionary<NSNumber *,NhWindow *>	* g_WindowDict;
 
 @end
 
+const char *cocoa_resource_dir(void)
+{
+	return s_baseFilePath;
+}
+
 // These must be defined but are not used (they handle keyboard interrupts).
 void intron() {}
 void introff() {}
@@ -309,10 +309,10 @@ void cocoa_init_nhwindows(int* argc, char** argv)
 	[[MainWindowController instance] initWindows];
 }
 
-void cocoa_askname()
+void cocoa_askname(void)
 {
 	//NSLog(@"askname");
-	cocoa_getlin("Enter your name", plname);
+	cocoa_getlin("Enter your name", svp.plname);
 }
 
 void cocoa_get_nh_event()
@@ -375,7 +375,7 @@ void cocoa_clear_nhwindow(winid wid)
 	[win clear];
 }
 
-void cocoa_display_nhwindow(winid wid, BOOLEAN_P block)
+void cocoa_display_nhwindow(winid wid, boolean block)
 {
 	//NSLog(@"display_nhwindow %x, %i, %i", wid, ((NhWindow *) wid).type, block);
 	NhWindow * win = g_WindowDict[@(wid)];
@@ -421,7 +421,7 @@ void cocoa_putmixed(winid wid, int attr, const char *text)
 	genl_putmixed(wid, attr, text);
 }
 
-void cocoa_display_file(const char *filename, BOOLEAN_P must_exist)
+void cocoa_display_file(const char *filename, boolean must_exist)
 {
 	char tmp[ PATH_MAX ];
 	[WinCocoa expandFilename:filename intoPath:tmp];
@@ -440,17 +440,19 @@ void cocoa_display_file(const char *filename, BOOLEAN_P must_exist)
 
 #pragma mark menu
 
-void cocoa_start_menu(winid wid)
+void cocoa_start_menu(winid wid, unsigned long mbehavior)
 {
 	//NSLog(@"start_menu %x", wid);
 	NhMenuWindow * win = (NhMenuWindow *) g_WindowDict[@(wid)];
 	[win startMenu];
 }
 
-void cocoa_add_menu(winid wid, int glyph, const ANY_P *identifier,
-					 CHAR_P accelerator, CHAR_P group_accel, int attr, 
-					 const char *str, BOOLEAN_P presel)
+void cocoa_add_menu(winid wid, const glyph_info *glyphinfo, const ANY_P *identifier,
+					char accelerator, char group_accel, int attr, int clr,
+					const char *str, unsigned int itemflags)
 {
+	int glyph = glyphinfo ? glyphinfo->glyph : NO_GLYPH;
+	BOOL presel = (itemflags & MENU_ITEMFLAGS_SELECTED) != 0;
 	//NSLog(@"add_menu %x %s", wid, str);
 	NhMenuWindow * win = (NhMenuWindow *) g_WindowDict[@(wid)];
 
@@ -505,7 +507,7 @@ int cocoa_select_menu(winid wid, int how, menu_item **selected)
 	}
 }
 
-void cocoa_update_inventory()
+void cocoa_update_inventory(int arg)
 {
 	//NSLog(@"update_inventory");
 	[[MainWindowController instance] updateInventory];
@@ -536,8 +538,10 @@ void cocoa_cliparound_window(winid wid, int x, int y)
 	}
 }
 
-void cocoa_print_glyph(winid wid, XCHAR_P x, XCHAR_P y, int glyph, int background)
+void cocoa_print_glyph(winid wid, coordxy x, coordxy y, const glyph_info *glyphinfo,
+					   const glyph_info *bkglyphinfo)
 {
+	int glyph = glyphinfo->glyph;
 	//NSLog(@"print_glyph %x %d,%d", wid, x, y);
 	NhMapWindow * win = (NhMapWindow *) g_WindowDict[@(wid)];
 	[win printGlyph:glyph atX:x y:y];
@@ -558,13 +562,17 @@ void cocoa_raw_print_bold(const char *str)
 	cocoa_raw_print(str);
 }
 
-int cocoa_nhgetch()
+int cocoa_nhgetch(void)
 {
-	NSLog(@"nhgetch");
-	return 0;
+	[[MainWindowController instance] refreshAllViews];
+	for (;;) {
+		NhEvent *e = [[NhEventQueue instance] nextEvent];
+		if (e.isKeyEvent)
+			return e.key;
+	}
 }
 
-int cocoa_nh_poskey(int *x, int *y, int *mod)
+int cocoa_nh_poskey(coordxy *x, coordxy *y, int *mod)
 {
 	//NSLog(@"nh_poskey");
 	[[MainWindowController instance] refreshAllViews];
@@ -591,7 +599,7 @@ int cocoa_doprev_message()
 
 #pragma mark yn_function 
 
-char cocoa_yn_function(const char *question, const char *choices, CHAR_P def)
+char cocoa_yn_function(const char *question, const char *choices, char def)
 {
 	//NSLog(@"yn_function %s", question);
 	static const char * AlwaysYes[] = {
@@ -697,16 +705,6 @@ void cocoa_delay_output()
 	usleep(50000);
 }
 
-void cocoa_start_screen()
-{
-	NSLog(@"start_screen");
-}
-
-void cocoa_end_screen()
-{
-	NSLog(@"end_screen");
-}
-
 void cocoa_outrip(winid wid, int how, time_t when)
 {
 	NSLog(@"outrip %lx", wid);
@@ -718,29 +716,22 @@ void cocoa_preference_update(const char * pref)
 	[[MainWindowController instance] preferenceUpdate:[NSString stringWithUTF8String:pref]];
 }
 
-char *cocoa_getmsghistory(BOOLEAN_P init)
+char *cocoa_getmsghistory(boolean init)
 {
 	// return messages oldest to newest
 	return NULL;
 }
-void cocoa_putmsghistory(const char * msg, BOOLEAN_P is_restoring)
+void cocoa_putmsghistory(const char * msg, boolean is_restoring)
 {
 }
-void cocoa_status_init()
-{
-}
-void cocoa_status_finish()
-{
-}
-void cocoa_status_enablefield(int a, const char *b, const char *c, BOOLEAN_P d)
-{
-}
-void cocoa_status_update(int a, genericptr_t b, int c, int d, int e, unsigned long *f)
-{
-}
-boolean win_can_suspend()
+boolean win_can_suspend(void)
 {
 	return YES;
+}
+
+win_request_info *cocoa_ctrl_nhwindow(winid wid, int request, win_request_info *wri)
+{
+	return NULL;
 }
 
 
@@ -748,7 +739,7 @@ boolean win_can_suspend()
 
 
 // from tty port
-void cocoa_player_selection()
+void cocoa_player_selection(void)
 {
 	[[MainWindowController instance] showPlayerSelection];
 }

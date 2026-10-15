@@ -58,7 +58,7 @@ enum InvFlags {
 	NSMutableArray *commands = [NSMutableArray array];
 	int inv = 0;
 
-	for (struct obj *otmp = invent; otmp; otmp = otmp->nobj) {
+	for (struct obj *otmp = gi.invent; otmp; otmp = otmp->nobj) {
 		switch (otmp->oclass) {
 			case WAND_CLASS:
 				inv |= fWand;
@@ -89,17 +89,14 @@ enum InvFlags {
 		}
 	}
 	
-	if ((u.ux == xupstair && u.uy == yupstair)
-		|| (u.ux == sstairs.sx && u.uy == sstairs.sy && sstairs.up)
-		|| (u.ux == xupladder && u.uy == yupladder)) {
+	stairway *stway = stairway_at(u.ux, u.uy);
+	if (stway && stway->up) {
 		[self addCommand:[NhCommand commandWithTitle:"Up" key:'<'] toCommands:commands];
-	} else if ((u.ux == xdnstair && u.uy == ydnstair)
-			   || (u.ux == sstairs.sx && u.uy == sstairs.sy && !sstairs.up)
-			   || (u.ux == xdnladder && u.uy == ydnladder)) {
+	} else if (stway) {
 		[self addCommand:[NhCommand commandWithTitle:"Down" key:'>'] toCommands:commands];
 	}
 	
-	struct obj *object = level.objects[u.ux][u.uy];
+	struct obj *object = svl.level.objects[u.ux][u.uy];
 	if (object) {
 		// todo iterate over stack here
 		[self addCommand:[NhCommand commandWithTitle:"Pickup" key:','] toCommands:commands];
@@ -187,7 +184,7 @@ enum InvFlags {
 	if (spellid(0) != NO_SPELL) {
 		[self addCommand:[NhCommand commandWithTitle:"Cast" key:'Z'] toCommands:commands];
 	}
-	if (!notake(youmonst.data) && !check_capacity((char *)0) && uquiver) {
+	if (!notake(gy.youmonst.data) && !check_capacity((char *)0) && uquiver) {
 		[self addCommand:[NhCommand commandWithTitle:"Fire" key:'f'] toCommands:commands];
 	}
 	if (inv & fReadable) {
@@ -213,7 +210,7 @@ enum InvFlags {
 + (NSArray *)commandsForAdjacentTile:(coord)tp {
 	NSMutableArray *commands = [NSMutableArray array];
 	coord nhDelta = CoordMake(tp.x-u.ux, tp.y-u.uy);
-	int dir = xytod(nhDelta.x, nhDelta.y);
+	int dir = xytodir(nhDelta.x, nhDelta.y);
 	static const char sdir[] = "hykulnjb><";
  	char direction = sdir[dir];
 	if (tp.x > 0 && tp.y > 0 && tp.x < COLNO && tp.y < ROWNO) {

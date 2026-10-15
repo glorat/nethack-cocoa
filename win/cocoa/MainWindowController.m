@@ -164,7 +164,7 @@ static MainWindowController* instance;
 		
 		// set defaults if no user preference
 		if ( tileSetName == nil ) {
-			tileSetName = @"tiles24.bmp";
+			tileSetName = @"tiles16.bmp";
 		}
 		NSSize size = [self tileSetSizeFromName:tileSetName];
 		if ( ![self setTileSet:tileSetName size:size] ) {
@@ -308,7 +308,8 @@ static MainWindowController* instance;
 	NSSize imageSize = [tilesetImage size];
 	int count = (imageSize.width / size.width) * (imageSize.height / size.height);
 	NSLog(@"%@: %ld", tileSetName, (long)count);
-	if ( count < 40*37-4 ) {
+	extern int total_tiles_used;
+	if ( count < total_tiles_used ) {
 		// not enough images
 		return nil;
 	}

@@ -52,8 +52,8 @@
 		if ( glyph != NO_GLYPH ) {
 			image = [[TileSet instance] imageForGlyph:glyph enabled:YES];
 			char * description = doname(item);
-			char invent = item->invlet;
-			text = [NSString stringWithFormat:@"(%c) %s", invent, description];
+			char invlet = item->invlet;
+			text = [NSString stringWithFormat:@"(%c) %s", invlet, description];
 			if ( [text hasSuffix:@" (being worn)"] )
 				text = [text substringToIndex:[text length] - 13];
 		}

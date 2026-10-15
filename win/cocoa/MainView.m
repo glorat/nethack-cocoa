@@ -199,9 +199,12 @@ NSStringEncoding	codepage437encoding;
 						if ( iflags.wc_ascii_map || Is_rogue_level(&u.uz) ) {
 							
 							// use ASCII text
-							int ochar, ocolor;
-							unsigned int special;
-							mapglyph(glyph, &ochar, &ocolor, &special, i, j, MG_FLAG_NORMAL);
+							glyph_info glyphinfo;
+							map_glyphinfo(i, j, glyph, 0, &glyphinfo);
+							int ochar = glyphinfo.ttychar;
+							int ocolor = glyphinfo.gm.sym.color;
+							if (ocolor < 0 || ocolor >= CLR_MAX)
+								ocolor = NO_COLOR;
 							
 							if ( ochar == 0x1 ) {
 								// smiley face in rogue level when using IBMgraphics

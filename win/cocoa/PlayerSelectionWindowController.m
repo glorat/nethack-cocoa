@@ -167,8 +167,8 @@
 	alignment[1] = alignNeutral;
 	alignment[2] = alignChaotic;
 	
-	if ( strncmp(plname,"player",6) && strncmp(plname,"games",5) ) {
-		[name setStringValue:[NSString stringWithUTF8String:plname]];;
+	if ( strncmp(svp.plname,"player",6) && strncmp(svp.plname,"games",5) ) {
+		[name setStringValue:[NSString stringWithUTF8String:svp.plname]];;
 	}
 		
 	// count roles and races
@@ -280,11 +280,11 @@
 
 	if ( aTableView == race ) {
 		text = races[rowIndex].noun;
-		glyph = monnum_to_glyph( male || races[rowIndex].femalenum < 0 ? races[rowIndex].malenum : races[rowIndex].femalenum);
+		glyph = monnum_to_glyph(races[rowIndex].mnum, male ? MALE : FEMALE);
 		enabled = raceEnabled[ rowIndex ];
 	} else {
 		text = male || roles[rowIndex].name.f == NULL ? roles[rowIndex].name.m : roles[rowIndex].name.f;
-		glyph = monnum_to_glyph(male || roles[rowIndex].femalenum < 0 ? roles[rowIndex].malenum : roles[rowIndex].femalenum);
+		glyph = monnum_to_glyph(roles[rowIndex].mnum, male ? MALE : FEMALE);
 		enabled = roleEnabled[ rowIndex ];
 	}
 	
@@ -347,7 +347,7 @@
 
 -(void)doAccept:(id)sender
 {
-	strcpy( plname, [[name stringValue] UTF8String] );
+	strcpy( svp.plname, [[name stringValue] UTF8String] );
 	[[self window] close];
 }
 

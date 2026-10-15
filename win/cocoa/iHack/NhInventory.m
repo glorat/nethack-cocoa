@@ -47,7 +47,7 @@
 - (void)update {
 	[objectClasses removeAllObjects];
 	memset(classArray, (long) nil, sizeof(classArray));
-	for (struct obj *otmp = invent; otmp; otmp = otmp->nobj) {
+	for (struct obj *otmp = gi.invent; otmp; otmp = otmp->nobj) {
 		NSMutableArray *array = [self arrayForClass:otmp->oclass];
 		[array addObject:[NhObject objectWithObject:otmp]];
 	}
@@ -66,7 +66,7 @@
 	
 	// Hands / Gold
 	NSArray *specialObjects = nil;
-	if (money_cnt(invent)) {
+	if (money_cnt(gi.invent)) {
 		specialObjects = [NSArray arrayWithObjects:[NhObject objectWithTitle:@"Gold" inventoryLetter:'$' group_accel:0],
 						  [NhObject objectWithTitle:@"Hands" inventoryLetter:'-' group_accel:0], nil];
 	} else {

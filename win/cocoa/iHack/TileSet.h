@@ -24,8 +24,6 @@
 
 #import <Foundation/Foundation.h>
 
-extern short glyph2tile[];
-
 @interface TileSet : NSObject {
 	
 	NSImage *image;
