@@ -74,7 +74,8 @@ XIBS := $(wildcard en.lproj/*.xib)
 NIBS := $(patsubst en.lproj/%.xib,$(CONTENTS)/Resources/en.lproj/%.nib,$(XIBS))
 
 DATA := $(TOP)/dat/nhdat $(TOP)/dat/license $(TOP)/dat/symbols sysconf \
-	Credits.rtf $(wildcard Resources/images/*.png) $(BUILD)/tiles16.bmp
+	Credits.rtf $(wildcard Resources/images/*.png) $(BUILD)/tiles16.bmp \
+	Resources/tiles/tiles64.png Resources/tiles/tiles128.png
 
 .PHONY: all app core run clean
 

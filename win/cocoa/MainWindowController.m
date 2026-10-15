@@ -164,7 +164,7 @@ static MainWindowController* instance;
 		
 		// set defaults if no user preference
 		if ( tileSetName == nil ) {
-			tileSetName = @"tiles16.bmp";
+			tileSetName = @"tiles128.png";
 		}
 		NSSize size = [self tileSetSizeFromName:tileSetName];
 		if ( ![self setTileSet:tileSetName size:size] ) {
