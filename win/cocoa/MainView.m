@@ -84,7 +84,7 @@ NSStringEncoding	codepage437encoding;
 		
 	} else {
 
-		tileSize = [TileSet instance].tileSize;
+		tileSize = [TileSet instance].displaySize;
 
 	}
 
@@ -173,6 +173,8 @@ NSStringEncoding	codepage437encoding;
 	NhMapWindow *map = (NhMapWindow *) [NhWindow mapWindow];
 	if (map) {
 		NSImage	*	image = [[TileSet instance] image];
+		if ( [TileSet instance].tileSize.width > tileSize.width )
+			[[NSGraphicsContext currentContext] setImageInterpolation:NSImageInterpolationMedium];
 		
 		// cursor can update asynchronously behind us so gets its location upfront
 		int	cursorX, cursorY;

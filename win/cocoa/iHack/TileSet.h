@@ -28,6 +28,7 @@
 	
 	NSImage *image;
 	NSSize tileSize;
+	NSSize displaySize;
 	int rows;
 	int columns;
 
@@ -35,9 +36,11 @@
 
 @property (nonatomic, readonly) NSImage *image;
 @property (nonatomic, readonly) NSSize	tileSize;
+@property (nonatomic, readonly) NSSize	displaySize;
 
 + (TileSet *)instance;
 + (void)setInstance:(TileSet *)ts;
++ (NSSize)pixelSizeOfImage:(NSImage *)img;
 
 - (id)initWithImage:(NSImage *)img tileSize:(NSSize)ts;
 - (NSRect)sourceRectForGlyph:(int)glyph;

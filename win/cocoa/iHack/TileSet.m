@@ -34,6 +34,7 @@ static TileSet *s_instance = nil;
 
 @synthesize image;
 @synthesize	tileSize;
+@synthesize	displaySize;
 
 + (TileSet *)instance {
 	return s_instance;
@@ -43,21 +44,41 @@ static TileSet *s_instance = nil;
 	s_instance = ts;
 }
 
++ (CGImageRef)largestCGImageOfImage:(NSImage *)img {
+	NSBitmapImageRep *best = nil;
+	for (NSImageRep *rep in img.representations) {
+		if ([rep isKindOfClass:[NSBitmapImageRep class]] && rep.pixelsWide > best.pixelsWide)
+			best = (NSBitmapImageRep *)rep;
+	}
+	if (best)
+		return best.CGImage;
+	return [img CGImageForProposedRect:NULL context:nil hints:nil];
+}
+
++ (NSSize)pixelSizeOfImage:(NSImage *)img {
+	CGImageRef cg = [self largestCGImageOfImage:img];
+	if (cg == NULL)
+		return img.size;
+	return NSMakeSize(CGImageGetWidth(cg), CGImageGetHeight(cg));
+}
+
 - (id)initWithImage:(NSImage *)img tileSize:(NSSize)ts {
 	if (self = [super init]) {
-
-#if 1
-		NSRect rect = NSMakeRect(0,0,img.size.width,img.size.height);
-		image = [[NSImage alloc] initWithSize:rect.size];
-		[image lockFocus];
-		[img drawInRect:rect fromRect:rect operation:NSCompositingOperationCopy fraction:1.0];
-		[image unlockFocus];
-#else	
-		image = [img retain];
-#endif
+		// one image point per sheet pixel, regardless of the file's DPI
+		CGImageRef cg = [TileSet largestCGImageOfImage:img];
+		if (cg) {
+			image = [[NSImage alloc] initWithCGImage:cg size:[TileSet pixelSizeOfImage:img]];
+		} else {
+			image = img;
+		}
 		tileSize = ts;
 		rows = image.size.height / tileSize.height;
-		columns = image.size.width / tileSize.width;		
+		columns = image.size.width / tileSize.width;
+
+		// tiles larger than 16px are shown at the size of 16px tiles, with the extra pixels used for sharpness
+		CGFloat m = tileSize.width > tileSize.height ? tileSize.width : tileSize.height;
+		CGFloat scale = m > 16.0 ? 16.0 / m : 1.0;
+		displaySize = NSMakeSize(tileSize.width * scale, tileSize.height * scale);
 	}
 	return self;
 }
@@ -77,15 +98,7 @@ static TileSet *s_instance = nil;
 
 - (NSSize)imageSize
 {
-	NSSize size = [self tileSize];
-	if ( size.width > 32.0 || size.height > 32.0 ) {
-		// since these images are used in menus we want to scale them down
-		CGFloat m = size.width > size.height ? size.width : size.height;
-		m = 32.0 / m;
-		size.width  *= m;
-		size.height *= m;
-	}
-	return size;
+	return displaySize;
 }
 
 - (NSImage *)imageForGlyph:(int)glyph enabled:(BOOL)enabled
@@ -96,6 +109,8 @@ static TileSet *s_instance = nil;
 	NSImage * newImage = [[NSImage alloc] initWithSize:size];
 	NSRect dstRect = NSMakeRect(0, 0, size.width, size.height);
 	[newImage lockFocus];
+	if (tileSize.width > size.width)
+		[[NSGraphicsContext currentContext] setImageInterpolation:NSImageInterpolationMedium];
 	[image drawInRect:dstRect fromRect:srcRect operation:NSCompositingOperationCopy fraction:enabled ? 1.0f : 0.5];
 	[newImage unlockFocus];
 	return newImage;

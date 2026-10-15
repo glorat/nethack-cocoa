@@ -305,7 +305,7 @@ static MainWindowController* instance;
 	}
 
 	// make sure dimensions work
-	NSSize imageSize = [tilesetImage size];
+	NSSize imageSize = [TileSet pixelSizeOfImage:tilesetImage];
 	int count = (imageSize.width / size.width) * (imageSize.height / size.height);
 	NSLog(@"%@: %ld", tileSetName, (long)count);
 	extern int total_tiles_used;
