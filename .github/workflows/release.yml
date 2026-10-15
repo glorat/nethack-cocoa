@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    branches: [nethack-5.0]
     tags: ['v*']
   workflow_dispatch:
 

@@ -31,7 +31,7 @@ Gotchas:
 - New core source files in a future upstream merge must be added to `CORE_SRC`.
 - The minimum macOS is 12.0 (`MACOSX_DEPLOYMENT_TARGET`), the lowest Xcode 27's SDK supports. Make doesn't notice a change to it, `ARCHFLAGS` or `VERSION`: run `make -C win/cocoa clean` first.
 - Local builds are for this Mac's architecture. Releases pass `ARCHFLAGS="-arch arm64 -arch x86_64"` for a universal app, plus `VERSION` and `BUILD_NUMBER` for `Info.plist`.
-- `.github/workflows/release.yml` builds the universal app on a GitHub macOS runner. Pushing a `v*` tag (e.g. `v5.0.0`) publishes a GitHub Release with the zipped app and `.github/release-notes.md`; a manual run only uploads the zip as a workflow artifact. The app is ad-hoc signed, not notarized, so users approve it once with Open Anyway.
+- `.github/workflows/release.yml` builds the universal app on a GitHub macOS runner. Pushing a `v*` tag (e.g. `v5.0.0`) publishes a GitHub Release with the zipped app and `.github/release-notes.md`; pushes to `nethack-5.0` and manual runs only upload the zip as a workflow artifact. The app is ad-hoc signed, not notarized, so users approve it once with Open Anyway.
 - `tile2bmp` rejects long output paths, so the sheet is written in `util/` and then moved.
 
 There are no tests and no linter. `.clang-format` (LLVM-based, 4-space indent, 78 cols, no tabs) and `DEVEL/code_style.txt` describe upstream's C style; the Cocoa Objective-C files use their own older style (tabs). Match the file you're editing.
