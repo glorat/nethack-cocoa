@@ -55,7 +55,11 @@ static void wd_message(void);
 static struct passwd *get_unix_pw(void);
 
 int
+#ifdef COCOA_GRAPHICS
+unixmain(int argc, char *argv[])
+#else
 main(int argc, char *argv[])
+#endif
 {
     char *dir = NULL;
     NHFILE *nhfp;
@@ -65,7 +69,16 @@ main(int argc, char *argv[])
 
     early_init(argc, argv);
 
-#if defined(__APPLE__)
+#if defined(COCOA_GRAPHICS)
+    {
+        extern const char *cocoa_resource_dir(void);
+        extern void set_fqn_prefixes(void);
+
+        if (chdir(cocoa_resource_dir()) < 0)
+            error("can't locate resource folder");
+        set_fqn_prefixes();
+    }
+#elif defined(__APPLE__)
     {
 /* special hack to change working directory to a resource fork when
    running from finder --sam */

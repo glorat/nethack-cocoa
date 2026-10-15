@@ -12,7 +12,7 @@
 
 enum wp_ids { wp_tty = 1, wp_X11, wp_Qt, wp_mswin, wp_curses,
               wp_chainin, wp_chainout, wp_shim,
-              wp_hup, wp_guistubs, wp_ttystubs,
+              wp_hup, wp_guistubs, wp_ttystubs, wp_cocoa,
 #if defined(AMIGA)
               wp_amii, wp_amiv,
 #endif

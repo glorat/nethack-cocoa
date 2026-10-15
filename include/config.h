@@ -434,7 +434,7 @@
  */
 #define INSURANCE /* allow crashed game recovery */
 
-#if !defined(MACOS9) && !defined(SHIM_GRAPHICS)
+#if !defined(MACOS9) && !defined(SHIM_GRAPHICS) && !defined(COCOA_GRAPHICS)
 #define CHDIR /* delete if no chdir() available */
 #endif
 
