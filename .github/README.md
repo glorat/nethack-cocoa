@@ -11,9 +11,16 @@ A native Mac app for [NetHack 5.0](https://www.nethack.org/), the classic roguel
 
 ## Features
 
+### New in this version
+
 - **Full NetHack 5.0.0.** The complete, current game, not a variant.
-- **Painted tiles** at 64px and 128px, as well as the classic 16px tiles, and you can add your own tile sets.
+- **Painted tiles** at 64px and 128px, drawn over the floor beneath them.
 - **Zoom** with ⌘= and ⌘−, ⌘0 for actual size, or pinch on a trackpad.
+- **Ready-to-run download** for Apple Silicon and Intel Macs.
+
+### From the original NetHack Cocoa
+
+- **Classic 16px tiles**, and you can add your own tile sets.
 - **ASCII mode** with a font of your choice, for players who prefer the traditional look.
 - **Mac menus for game commands.** Move, Gear, Action and Magic menus list commands with their keys, so you can play without memorising them.
 - **Dialogs** for inventory menus, prompts, directions, extended commands and character creation.
