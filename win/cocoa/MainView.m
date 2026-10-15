@@ -365,18 +365,31 @@ static const int zoomLevelCount = sizeof zoomLevels / sizeof zoomLevels[0];
 }
 - (BOOL)acceptsFirstMouse:(NSEvent *)theEvent
 {
-	return YES;
+	// the click that activates the window shouldn't also move the hero
+	return NO;
 }
 
 
 - (void)mouseDown:(NSEvent *)theEvent
 {
 	NSPoint mouseLoc = [self convertPoint:[theEvent locationInWindow] fromView:nil];
-	mouseLoc.x = (int)(mouseLoc.x / tileSize.width);
-	mouseLoc.y = (int)(mouseLoc.y / tileSize.height);
-	mouseLoc.y = mouseLoc.y;
-	
-	NhEvent * e = [NhEvent eventWithX:mouseLoc.x y:mouseLoc.y];
+	int x = (int)(mouseLoc.x / tileSize.width);
+	int y = (int)(mouseLoc.y / tileSize.height);
+	if (x < 0 || x >= COLNO || y < 0 || y >= ROWNO)
+		return;
+
+	// a distant click travels, and travel to a never-seen square guesses a
+	// route through unknown territory
+	NhMapWindow *map = (NhMapWindow *) [NhWindow mapWindow];
+	int glyph = [map glyphAtX:x y:y];
+	if (program_state.input_state == commandInp
+		&& (glyph == kNoGlyph || glyph_is_unexplored(glyph))
+		&& (abs(x - u.ux) > 1 || abs(y - u.uy) > 1)) {
+		NSBeep();
+		return;
+	}
+
+	NhEvent * e = [NhEvent eventWithX:x y:y];
 	[[NhEventQueue instance] addEvent:e];
 }
 
