@@ -33,14 +33,16 @@
 @interface NhMapWindow : NhWindow {
 	
 	int glyphs[ROWNO][COLNO];
+	int bkglyphs[ROWNO][COLNO];
 
 	int cursorX;
 	int cursorY;
 }
 
 - (id) initWithType:(int)t;
-- (void) printGlyph:(int)glyph atX:(int)x y:(int)y;
+- (void) printGlyph:(int)glyph background:(int)bkglyph atX:(int)x y:(int)y;
 - (int) glyphAtX:(int)x y:(int)y;
+- (int) backgroundGlyphAtX:(int)x y:(int)y;
 - (void)setCursX:(int)x y:(int)y;
 - (void)cursX:(int *)px y:(int *)py;
 		

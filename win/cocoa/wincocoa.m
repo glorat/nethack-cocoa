@@ -289,6 +289,8 @@ void cocoa_init_nhwindows(int* argc, char** argv)
 	iflags.window_inited = TRUE;
 	iflags.toptenwin = TRUE;
 	iflags.menu_tab_sep = TRUE;
+	// tiles with transparent backgrounds are drawn over the floor beneath them
+	iflags.use_background_glyph = TRUE;
 	
 	// default ASCII mode is to use IBM graphics with color
 	iflags.use_color = TRUE;
@@ -542,9 +544,10 @@ void cocoa_print_glyph(winid wid, coordxy x, coordxy y, const glyph_info *glyphi
 					   const glyph_info *bkglyphinfo)
 {
 	int glyph = glyphinfo->glyph;
+	int bkglyph = bkglyphinfo ? bkglyphinfo->glyph : GLYPH_UNEXPLORED;
 	//NSLog(@"print_glyph %x %d,%d", wid, x, y);
 	NhMapWindow * win = (NhMapWindow *) g_WindowDict[@(wid)];
-	[win printGlyph:glyph atX:x y:y];
+	[win printGlyph:glyph background:bkglyph atX:x y:y];
 }
 
 void cocoa_raw_print(const char *str)

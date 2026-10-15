@@ -306,13 +306,16 @@ static const int zoomLevelCount = sizeof zoomLevels / sizeof zoomLevels[0];
 							
 						} else {
 							
-							// draw tile
+							// draw tile over the floor beneath it
+							[[NSColor blackColor] setFill];
+							[NSBezierPath fillRect:r];
+							int bkglyph = [map backgroundGlyphAtX:i y:j];
+							if (bkglyph != kNoGlyph && bkglyph != GLYPH_UNEXPLORED && bkglyph != glyph) {
+								NSRect bkRect = [[TileSet instance] sourceRectForGlyph:bkglyph];
+								[image drawInRect:r fromRect:bkRect operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
+							}
 							NSRect srcRect = [[TileSet instance] sourceRectForGlyph:glyph];
-#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1060
-							[image drawAdjustedInRect:r fromRect:srcRect operation:NSCompositeCopy fraction:1.0];
-#else
-							[image drawInRect:r fromRect:srcRect operation:NSCompositingOperationCopy fraction:1.0f respectFlipped:YES hints:nil];
-#endif
+							[image drawInRect:r fromRect:srcRect operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
 						}
 						
 						if (glyph_is_pet(glyph)) {

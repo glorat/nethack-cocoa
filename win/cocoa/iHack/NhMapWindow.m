@@ -32,12 +32,14 @@
 	if (self = [super initWithType:t]) {
 		NSLog(@"map window %lx", (long)self);
 		memset(glyphs, kNoGlyph, sizeof glyphs);
+		memset(bkglyphs, kNoGlyph, sizeof bkglyphs);
 	}
 	return self;
 }
 
-- (void) printGlyph:(int)glyph atX:(int)x y:(int)y {
+- (void) printGlyph:(int)glyph background:(int)bkglyph atX:(int)x y:(int)y {
 	glyphs[y][x] = glyph;
+	bkglyphs[y][x] = bkglyph;
 }
 
 - (void)setCursX:(int)x y:(int)y {
@@ -56,9 +58,14 @@
 	return glyphs[y][x];
 }
 
+- (int) backgroundGlyphAtX:(int)x y:(int)y {
+	return bkglyphs[y][x];
+}
+
 - (void) clear {
 	[super clear];
 	memset(glyphs, kNoGlyph, sizeof glyphs);
+	memset(bkglyphs, kNoGlyph, sizeof bkglyphs);
 }
 
 @end
