@@ -36,23 +36,23 @@
 	return self;
 }
 
-- (void) printGlyph:(int)glyph atX:(XCHAR_P)x y:(XCHAR_P)y {
+- (void) printGlyph:(int)glyph atX:(int)x y:(int)y {
 	glyphs[y][x] = glyph;
 }
 
-- (void)setCursX:(XCHAR_P)x y:(XCHAR_P)y {
+- (void)setCursX:(int)x y:(int)y {
 	cursorX = x;
 	cursorY = y;	
 }
 
-- (void)cursX:(XCHAR_P *)px y:(XCHAR_P *)py {
+- (void)cursX:(int *)px y:(int *)py {
 	*px = cursorX;
 	*py = cursorY;
 }
 
 
 
-- (int) glyphAtX:(XCHAR_P)x y:(XCHAR_P)y {
+- (int) glyphAtX:(int)x y:(int)y {
 	return glyphs[y][x];
 }
 

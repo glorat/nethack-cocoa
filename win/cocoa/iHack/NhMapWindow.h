@@ -34,14 +34,14 @@
 	
 	int glyphs[ROWNO][COLNO];
 
-	XCHAR_P cursorX;
-	XCHAR_P cursorY;
+	int cursorX;
+	int cursorY;
 }
 
 - (id) initWithType:(int)t;
-- (void) printGlyph:(int)glyph atX:(XCHAR_P)x y:(XCHAR_P)y;
-- (int) glyphAtX:(XCHAR_P)x y:(XCHAR_P)y;
-- (void)setCursX:(XCHAR_P)x y:(XCHAR_P)y;
-- (void)cursX:(XCHAR_P *)px y:(XCHAR_P *)py;
+- (void) printGlyph:(int)glyph atX:(int)x y:(int)y;
+- (int) glyphAtX:(int)x y:(int)y;
+- (void)setCursX:(int)x y:(int)y;
+- (void)cursX:(int *)px y:(int *)py;
 		
 @end
