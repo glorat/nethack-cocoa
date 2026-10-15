@@ -1,6 +1,6 @@
 # Builds NetHack.app (Cocoa window port) against the NetHack 5.0 core.
-# Runs upstream's setup.sh, fetch-lua and top-level build as needed for
-# the Lua sources, nhdat and the util tools, then builds the app.
+# Runs upstream's setup.sh, fetch-lua and the parts of the core build it
+# needs (makedefs, generated headers, data files, nhdat), then builds the app.
 #
 #   make -C win/cocoa          # -> win/cocoa/build/NetHack.app
 #   make -C win/cocoa run
@@ -90,10 +90,18 @@ all: app
 app: $(CONTENTS)/MacOS/NetHack $(NIBS) $(CONTENTS)/Info.plist \
 	$(CONTENTS)/Resources/nethack.icns resources
 
+# The core's hints probe for nroff, which macOS lacks, unless told to use mandoc
+export USE_MANDOC := 1
+
+# Only what the app uses from the core build: not the tty game, recover or
+# the Guidebook
 core:
 	@test -f $(TOP)/Makefile || (cd $(TOP)/sys/unix && sh setup.sh hints/macOS.500)
 	@test -f $(TOP)/lib/lua-$(LUA_VERSION)/src/lua.h || $(MAKE) -C $(TOP) fetch-lua
-	$(MAKE) -C $(TOP) all
+	$(MAKE) -C $(TOP) include/nhlua.h
+	$(MAKE) -C $(TOP)/src ../util/makedefs ../include/date.h
+	$(MAKE) -C $(TOP)/dat data rumors oracles engrave epitaph bogusmon options spec_levs quest_levs
+	$(MAKE) -C $(TOP) dlb
 
 $(TOP)/dat/nhdat $(TOP)/dat/symbols: | core ;
 
