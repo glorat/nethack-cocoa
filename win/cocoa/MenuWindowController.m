@@ -23,848 +23,737 @@
  */
 
 
+
 #import "MenuWindowController.h"
 #import "NhMenuWindow.h"
 #import "NhItem.h"
 #import "NhItemGroup.h"
 #import "TileSet.h"
-#import "NSString+Z.h"
 #import "NhEventQueue.h"
-#import "TileSet.h"
 
-#define RUN_MODAL	1
-#define QUICK_PICK	1
+static const CGFloat kTileSize		= 24.0;
+static const CGFloat kTileGap		= 6.0;
+static const CGFloat kLetterWidth	= 24.0;
+static const CGFloat kColumnGap		= 16.0;
+static const CGFloat kCheckboxWidth	= 24.0;
+static const CGFloat kMargin		= 16.0;
+static const CGFloat kButtonBar		= 52.0;
+
+
+@interface MenuRow : NSObject
+@property (nonatomic, strong) NhItem * item;	// nil for a line of text
+@property (nonatomic, strong) NSArray<NSString *> * fields;
+@property (nonatomic, assign) BOOL heading;
+@property (nonatomic, assign) CGFloat start;	// where the first field begins
+@end
+
+@implementation MenuRow
+@end
+
+
+// tty lays out columns with runs of spaces; a run after a full stop is just the end of a sentence
+static NSArray<NSString *> * SplitFields( NSString * text )
+{
+	text = [text stringByReplacingOccurrencesOfString:@"\t" withString:@"  "];
+	NSMutableArray * fields = [NSMutableArray array];
+	NSUInteger len = text.length, start = 0, i = 0;
+	while ( i < len ) {
+		if ( [text characterAtIndex:i] == ' ' && i+1 < len && [text characterAtIndex:i+1] == ' ' && i > start ) {
+			NSUInteger end = i;
+			while ( end < len && [text characterAtIndex:end] == ' ' )
+				++end;
+			unichar prev = [text characterAtIndex:i-1];
+			if ( end < len && prev != '.' && prev != '!' && prev != '?' && prev != ',' ) {
+				[fields addObject:[text substringWithRange:NSMakeRange(start, i-start)]];
+				start = end;
+			}
+			i = end;
+		} else {
+			++i;
+		}
+	}
+	[fields addObject:[text substringFromIndex:start]];
+	return fields;
+}
+
+static NSUInteger LeadingSpaces( NSString * text )
+{
+	NSUInteger i = 0;
+	while ( i < text.length && [text characterAtIndex:i] == ' ' )
+		++i;
+	return i;
+}
+
+static NSString * SortKey( NSString * title )
+{
+	static NSArray * prefixes = nil;
+	if ( prefixes == nil ) {
+		prefixes = @[ @"a ", @"an ", @"the ", @"blessed ", @"cursed ", @"uncursed ",
+					  @"very ", @"thoroughly ", @"rustproof ", @"fireproof ", @"corrodeproof ", @"fixed ",
+					  @"rusty ", @"burnt ", @"corroded ", @"rotted ", @"partly eaten " ];
+	}
+	NSString * s = title;
+	BOOL changed = YES;
+	while ( changed ) {
+		changed = NO;
+		NSUInteger sign = s.length && ([s characterAtIndex:0] == '+' || [s characterAtIndex:0] == '-') ? 1 : 0;
+		NSUInteger digits = sign;
+		while ( digits < s.length && isdigit([s characterAtIndex:digits]) )
+			++digits;
+		if ( digits > sign && digits < s.length && [s characterAtIndex:digits] == ' ' ) {
+			s = [s substringFromIndex:digits+1];
+			changed = YES;
+		}
+		for ( NSString * prefix in prefixes ) {
+			if ( [s hasPrefix:prefix] ) {
+				s = [s substringFromIndex:prefix.length];
+				changed = YES;
+			}
+		}
+	}
+	return s;
+}
+
+
+@interface MenuTableView : NSTableView
+@end
+
+@implementation MenuTableView
+// let clicks on a row's checkbox reach it instead of starting a selection
+- (BOOL)validateProposedFirstResponder:(NSResponder *)responder forEvent:(NSEvent *)event
+{
+	return YES;
+}
+@end
 
 
 @implementation MenuWindowController
-
-
--(void)buttonClick:(id)sender
 {
-	[acceptButton setEnabled:YES];
-	
-	switch ( [menuParams how] ) {
+	NhMenuWindow		*	menuParams;
+	int						how;
+	NSMutableArray<MenuRow *> *	rows;
+	NSMutableSet		*	checked;
+	NSFont				*	bodyFont;
+	NSFont				*	headingFont;
+	NSParagraphStyle	*	paragraphStyle;
+	BOOL					hasTiles;
+	BOOL					hasLetters;
+	CGFloat					itemStart;
+	CGFloat					contentWidth;
+	NSTableView			*	tableView;
+	NSTextView			*	textView;
+	NSButton			*	sortButton;
+	int						count;
+	id						keyMonitor;
+	BOOL					finished;
+}
 
-		case PICK_NONE:
-			break;
-			
-		case PICK_ONE:
-			{
-#if QUICK_PICK
-				[self doAccept:nil];
-#else
-				// unselect any other items
-				NSButton * button = sender;				
-				for ( NSButton * item in [menuView subviews] ) {
-					if ( [item class] == [button class]  &&  item != button )  {
-						[item setState:NSOffState];
+#pragma mark Building rows
+
+-(void)buildRows
+{
+	rows = [NSMutableArray array];
+	checked = [NSMutableSet set];
+	hasTiles = NO;
+	hasLetters = NO;
+
+	BOOL hasItems = NO;
+	NSMutableSet * usedLetters = [NSMutableSet set];
+	for ( NhItemGroup * group in menuParams.itemGroups ) {
+		for ( NhItem * item in group.items ) {
+			hasItems = YES;
+			if ( item.glyph != NO_GLYPH )
+				hasTiles = YES;
+			if ( item.inventoryLetter )
+				[usedLetters addObject:@(item.inventoryLetter)];
+		}
+	}
+
+	// tty hands out letters to items that the core didn't give one
+	const char * nextLetter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	if ( how != PICK_NONE ) {
+		for ( NhItemGroup * group in menuParams.itemGroups ) {
+			for ( NhItem * item in group.items ) {
+				if ( item.inventoryLetter == 0 ) {
+					while ( *nextLetter && [usedLetters containsObject:@(*nextLetter)] )
+						++nextLetter;
+					if ( *nextLetter )
+						[item setInventoryLetter:*nextLetter++];
+				}
+			}
+		}
+	}
+	for ( NhItemGroup * group in menuParams.itemGroups ) {
+		for ( NhItem * item in group.items ) {
+			if ( item.inventoryLetter )
+				hasLetters = YES;
+		}
+	}
+
+	itemStart = (hasTiles ? kTileSize + kTileGap : 0) + (hasLetters ? kLetterWidth : 0);
+	CGFloat spaceWidth = [@" " sizeWithAttributes:@{ NSFontAttributeName : bodyFont }].width;
+
+	for ( NhItemGroup * group in menuParams.itemGroups ) {
+		if ( !group.dummy ) {
+			NSString * title = group.title;
+			NSUInteger spaces = LeadingSpaces(title);
+			NSString * text = [[title substringFromIndex:spaces] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+			MenuRow * row = [MenuRow new];
+			row.fields = SplitFields(text);
+			row.heading = group.items.count > 0
+						|| (group.attr != ATR_NONE && text.length > 0)
+						|| (spaces == 0 && [text hasSuffix:@":"]);
+			// in tty, text indented by four spaces lines up with the items after "a - "
+			if ( hasItems && spaces >= 4 && itemStart > 0 ) {
+				row.start = itemStart + (spaces - 4) * spaceWidth;
+			} else {
+				row.start = spaces * spaceWidth * 2;
+			}
+			[rows addObject:row];
+		}
+		for ( NhItem * item in group.items ) {
+			MenuRow * row = [MenuRow new];
+			row.item = item;
+			NSString * text = [item.title stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+			if ( item.detail )
+				text = [text stringByAppendingFormat:@" (%@)", item.detail];
+			row.fields = SplitFields(text);
+			row.start = itemStart;
+			[rows addObject:row];
+			if ( item.selected )
+				[checked addObject:item];
+		}
+	}
+}
+
+-(NSFont *)fontForRow:(MenuRow *)row
+{
+	return row.heading ? headingFont : bodyFont;
+}
+
+// column positions shared by every row, so items, headings and text line up
+-(void)computeTabStops
+{
+	NSMutableArray<NSNumber *> * columns = [NSMutableArray array];
+	NSUInteger maxFields = 0;
+	for ( MenuRow * row in rows )
+		maxFields = MAX(maxFields, row.fields.count);
+
+	NSMutableArray<NSNumber *> * rowX = [NSMutableArray array];
+	for ( MenuRow * row in rows )
+		[rowX addObject:@(row.start)];
+
+	for ( NSUInteger c = 0; c + 1 < maxFields; ++c ) {
+		CGFloat next = 0;
+		for ( NSUInteger r = 0; r < rows.count; ++r ) {
+			MenuRow * row = rows[r];
+			if ( row.fields.count > c + 1 ) {
+				CGFloat x = c == 0 ? row.start : columns[c-1].doubleValue;
+				CGFloat w = [row.fields[c] sizeWithAttributes:@{ NSFontAttributeName : [self fontForRow:row] }].width;
+				next = MAX(next, ceil(x + w + kColumnGap));
+			}
+		}
+		[columns addObject:@(next)];
+	}
+
+	NSMutableParagraphStyle * style = [[NSMutableParagraphStyle alloc] init];
+	NSMutableArray * tabs = [NSMutableArray array];
+	if ( hasTiles )
+		[tabs addObject:[[NSTextTab alloc] initWithTextAlignment:NSTextAlignmentLeft location:kTileSize + kTileGap options:@{}]];
+	if ( hasLetters )
+		[tabs addObject:[[NSTextTab alloc] initWithTextAlignment:NSTextAlignmentLeft location:itemStart options:@{}]];
+	for ( NSNumber * x in columns )
+		[tabs addObject:[[NSTextTab alloc] initWithTextAlignment:NSTextAlignmentLeft location:x.doubleValue options:@{}]];
+	style.tabStops = tabs;
+	style.lineBreakMode = NSLineBreakByClipping;
+	paragraphStyle = style;
+
+	contentWidth = 0;
+	for ( MenuRow * row in rows ) {
+		NSUInteger last = row.fields.count - 1;
+		CGFloat x = last == 0 ? row.start : columns[last-1].doubleValue;
+		CGFloat w = [row.fields[last] sizeWithAttributes:@{ NSFontAttributeName : [self fontForRow:row] }].width;
+		contentWidth = MAX(contentWidth, ceil(x + w));
+	}
+}
+
+-(NSAttributedString *)stringForRow:(MenuRow *)row
+{
+	NSMutableParagraphStyle * style = [paragraphStyle mutableCopy];
+	NSDictionary * attributes = @{ NSFontAttributeName : [self fontForRow:row],
+								   NSForegroundColorAttributeName : [NSColor labelColor],
+								   NSParagraphStyleAttributeName : style };
+	NSMutableAttributedString * s = [[NSMutableAttributedString alloc] init];
+
+	if ( row.item ) {
+		if ( hasTiles ) {
+			if ( row.item.glyph != NO_GLYPH ) {
+				NSTextAttachment * attachment = [[NSTextAttachment alloc] init];
+				attachment.image = [[TileSet instance] imageForGlyph:row.item.glyph enabled:YES];
+				CGFloat capHeight = bodyFont.capHeight;
+				attachment.bounds = NSMakeRect(0, round((capHeight - kTileSize) / 2), kTileSize, kTileSize);
+				[s appendAttributedString:[NSAttributedString attributedStringWithAttachment:attachment]];
+			}
+			[s appendAttributedString:[[NSAttributedString alloc] initWithString:@"\t" attributes:attributes]];
+		}
+		if ( hasLetters ) {
+			NSString * letter = row.item.inventoryLetter ? [NSString stringWithFormat:@"%c", row.item.inventoryLetter] : @"";
+			NSDictionary * letterAttributes = @{ NSFontAttributeName : [NSFont monospacedSystemFontOfSize:bodyFont.pointSize weight:NSFontWeightMedium],
+												 NSForegroundColorAttributeName : [NSColor secondaryLabelColor],
+												 NSParagraphStyleAttributeName : style };
+			[s appendAttributedString:[[NSAttributedString alloc] initWithString:letter attributes:letterAttributes]];
+			[s appendAttributedString:[[NSAttributedString alloc] initWithString:@"\t" attributes:attributes]];
+		}
+	} else {
+		style.firstLineHeadIndent = row.start;
+		style.headIndent = row.start;
+	}
+
+	NSString * text = [row.fields componentsJoinedByString:@"\t"];
+	[s appendAttributedString:[[NSAttributedString alloc] initWithString:text attributes:attributes]];
+	[s addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, s.length)];
+	return s;
+}
+
+#pragma mark Window
+
+- (id)initWithMenu:(NhMenuWindow *)menu
+{
+	NSPanel * panel = [[NSPanel alloc] initWithContentRect:NSMakeRect(0, 0, 400, 300)
+												 styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable
+												   backing:NSBackingStoreBuffered
+													 defer:YES];
+	if ( self = [super initWithWindow:panel] ) {
+		menuParams = menu;
+		how = menu.how;
+		panel.delegate = self;
+		panel.title = menu.prompt ?: @"";
+		bodyFont = [NSFont systemFontOfSize:14];
+		headingFont = [NSFont systemFontOfSize:14 weight:NSFontWeightSemibold];
+		[self buildRows];
+		[self computeTabStops];
+		[self buildContents];
+		[self installKeyMonitor];
+	}
+	return self;
+}
+
+-(NSButton *)buttonWithTitle:(NSString *)title action:(SEL)action
+{
+	NSButton * button = [NSButton buttonWithTitle:title target:self action:action];
+	button.translatesAutoresizingMaskIntoConstraints = NO;
+	return button;
+}
+
+-(void)buildContents
+{
+	NSView * content = self.window.contentView;
+	NSScrollView * scrollView = [[NSScrollView alloc] init];
+	scrollView.translatesAutoresizingMaskIntoConstraints = NO;
+	scrollView.hasVerticalScroller = YES;
+	scrollView.autohidesScrollers = YES;
+	scrollView.borderType = NSNoBorder;
+	[content addSubview:scrollView];
+
+	CGFloat documentHeight;
+	CGFloat documentWidth;
+	if ( how == PICK_NONE ) {
+		documentWidth = contentWidth + 2 * kMargin + 10;
+		textView = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, documentWidth, 100)];
+		textView.editable = NO;
+		textView.selectable = YES;
+		textView.textContainerInset = NSMakeSize(kMargin, 12);
+		textView.autoresizingMask = NSViewWidthSizable;
+		textView.textContainer.widthTracksTextView = YES;
+		NSMutableAttributedString * all = [[NSMutableAttributedString alloc] init];
+		for ( MenuRow * row in rows ) {
+			if ( all.length )
+				[all appendAttributedString:[[NSAttributedString alloc] initWithString:@"\n"]];
+			[all appendAttributedString:[self stringForRow:row]];
+		}
+		[textView.textStorage setAttributedString:all];
+		[textView.layoutManager ensureLayoutForTextContainer:textView.textContainer];
+		documentHeight = [textView.layoutManager usedRectForTextContainer:textView.textContainer].size.height + 24;
+		scrollView.documentView = textView;
+	} else {
+		CGFloat rowHeight = hasTiles ? kTileSize + 6 : 22;
+		tableView = [[MenuTableView alloc] init];
+		NSTableColumn * column = [[NSTableColumn alloc] initWithIdentifier:@"menu"];
+		column.resizingMask = NSTableColumnAutoresizingMask;
+		[tableView addTableColumn:column];
+		tableView.headerView = nil;
+		tableView.style = NSTableViewStylePlain;
+		tableView.rowHeight = rowHeight;
+		tableView.intercellSpacing = NSMakeSize(0, 2);
+		tableView.allowsTypeSelect = NO;
+		tableView.allowsEmptySelection = YES;
+		tableView.columnAutoresizingStyle = NSTableViewUniformColumnAutoresizingStyle;
+		tableView.dataSource = self;
+		tableView.delegate = self;
+		tableView.target = self;
+		tableView.action = @selector(rowClicked:);
+		scrollView.documentView = tableView;
+		scrollView.automaticallyAdjustsContentInsets = NO;
+		scrollView.contentInsets = NSEdgeInsetsMake(6, 0, 6, 0);
+		documentWidth = contentWidth + 2 * kMargin + (how == PICK_ANY ? kCheckboxWidth : 0) + 20;
+		documentHeight = rows.count * (rowHeight + 2) + 14;
+	}
+
+	// buttons
+	NSButton * accept = [self buttonWithTitle:(how == PICK_NONE ? @"Close" : @"OK") action:@selector(doAccept:)];
+	accept.keyEquivalent = @"\r";
+	NSStackView * right = [NSStackView stackViewWithViews:@[ accept ]];
+	if ( how != PICK_NONE ) {
+		NSButton * cancel = [self buttonWithTitle:@"Cancel" action:@selector(doCancel:)];
+		[right insertView:cancel atIndex:0 inGravity:NSStackViewGravityLeading];
+	}
+	right.translatesAutoresizingMaskIntoConstraints = NO;
+	[content addSubview:right];
+
+	NSStackView * left = [NSStackView stackViewWithViews:@[]];
+	left.translatesAutoresizingMaskIntoConstraints = NO;
+	if ( how == PICK_ANY ) {
+		[left addView:[self buttonWithTitle:@"Select All" action:@selector(selectAll:)] inGravity:NSStackViewGravityLeading];
+	}
+	if ( how != PICK_NONE && hasTiles ) {
+		sortButton = [NSButton checkboxWithTitle:@"Sort A–Z" target:self action:@selector(sortItems:)];
+		[left addView:sortButton inGravity:NSStackViewGravityLeading];
+	}
+	[content addSubview:left];
+
+	[NSLayoutConstraint activateConstraints:@[
+		[scrollView.topAnchor constraintEqualToAnchor:content.topAnchor],
+		[scrollView.leadingAnchor constraintEqualToAnchor:content.leadingAnchor],
+		[scrollView.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
+		[scrollView.bottomAnchor constraintEqualToAnchor:content.bottomAnchor constant:-kButtonBar],
+		[right.trailingAnchor constraintEqualToAnchor:content.trailingAnchor constant:-kMargin],
+		[right.centerYAnchor constraintEqualToAnchor:content.bottomAnchor constant:-kButtonBar/2],
+		[left.leadingAnchor constraintEqualToAnchor:content.leadingAnchor constant:kMargin],
+		[left.centerYAnchor constraintEqualToAnchor:content.bottomAnchor constant:-kButtonBar/2],
+		[left.trailingAnchor constraintLessThanOrEqualToAnchor:right.leadingAnchor constant:-kMargin],
+	]];
+
+	// size the window to the contents, within the screen
+	NSRect visible = (NSApp.mainWindow.screen ?: NSScreen.mainScreen).visibleFrame;
+	CGFloat width = MIN(MAX(documentWidth, 360), visible.size.width * 0.9);
+	CGFloat height = MIN(MAX(documentHeight, 60) + kButtonBar, visible.size.height * 0.85);
+	[self.window setContentSize:NSMakeSize(width, height)];
+	self.window.contentMinSize = NSMakeSize(300, 160);
+	NSRect main = NSApp.mainWindow ? NSApp.mainWindow.frame : visible;
+	NSRect frame = self.window.frame;
+	frame.origin.x = round(NSMidX(main) - frame.size.width / 2);
+	frame.origin.y = round(MIN(NSMaxY(main) - 60, NSMaxY(visible)) - frame.size.height);
+	frame.origin.x = MAX(NSMinX(visible), MIN(frame.origin.x, NSMaxX(visible) - frame.size.width));
+	frame.origin.y = MAX(NSMinY(visible), frame.origin.y);
+	[self.window setFrame:frame display:NO];
+
+	if ( tableView ) {
+		[tableView sizeLastColumnToFit];
+		[self.window makeFirstResponder:tableView];
+	} else {
+		[self.window makeFirstResponder:textView];
+	}
+}
+
+#pragma mark Table
+
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tv
+{
+	return rows.count;
+}
+
+- (BOOL)tableView:(NSTableView *)tv isGroupRow:(NSInteger)r
+{
+	return rows[r].heading && rows[r].item == nil;
+}
+
+- (BOOL)tableView:(NSTableView *)tv shouldSelectRow:(NSInteger)r
+{
+	return rows[r].item != nil;
+}
+
+- (NSView *)tableView:(NSTableView *)tv viewForTableColumn:(NSTableColumn *)column row:(NSInteger)r
+{
+	MenuRow * row = rows[r];
+	NSTableCellView * cell = [[NSTableCellView alloc] init];
+	if ( how == PICK_ANY && row.item ) {
+		NSButton * box = [NSButton checkboxWithTitle:@"" target:self action:@selector(checkboxClicked:)];
+		box.translatesAutoresizingMaskIntoConstraints = NO;
+		box.state = [checked containsObject:row.item] ? NSControlStateValueOn : NSControlStateValueOff;
+		box.tag = r;
+		[cell addSubview:box];
+		[NSLayoutConstraint activateConstraints:@[
+			[box.leadingAnchor constraintEqualToAnchor:cell.leadingAnchor constant:kMargin],
+			[box.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor],
+		]];
+	}
+	CGFloat leading = kMargin + (how == PICK_ANY ? kCheckboxWidth : 0);
+	NSTextField * label = [NSTextField labelWithAttributedString:[self stringForRow:row]];
+	label.translatesAutoresizingMaskIntoConstraints = NO;
+	label.lineBreakMode = NSLineBreakByClipping;
+	[label setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+	[cell addSubview:label];
+	cell.textField = label;
+	// a text field's own width leaves out the paragraph indent
+	NSLayoutConstraint * width = [label.widthAnchor constraintEqualToConstant:contentWidth + 4];
+	width.priority = NSLayoutPriorityDefaultHigh;
+	[NSLayoutConstraint activateConstraints:@[
+		[label.leadingAnchor constraintEqualToAnchor:cell.leadingAnchor constant:leading],
+		[label.trailingAnchor constraintLessThanOrEqualToAnchor:cell.trailingAnchor constant:-4],
+		[label.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor],
+		width,
+	]];
+	return cell;
+}
+
+-(void)reloadRowForItem:(NhItem *)item
+{
+	for ( NSUInteger r = 0; r < rows.count; ++r ) {
+		if ( rows[r].item == item ) {
+			[tableView reloadDataForRowIndexes:[NSIndexSet indexSetWithIndex:r] columnIndexes:[NSIndexSet indexSetWithIndex:0]];
+			[tableView scrollRowToVisible:r];
+			return;
+		}
+	}
+}
+
+-(void)toggleItem:(NhItem *)item
+{
+	if ( [checked containsObject:item] ) {
+		[checked removeObject:item];
+		item.amount = -1;
+	} else {
+		[checked addObject:item];
+		item.amount = count > 0 ? count : -1;
+	}
+	count = 0;
+	[self reloadRowForItem:item];
+}
+
+-(void)chooseItem:(NhItem *)item
+{
+	if ( how == PICK_ONE ) {
+		[checked removeAllObjects];
+		[checked addObject:item];
+		item.amount = count > 0 ? count : -1;
+		[self doAccept:nil];
+	} else if ( how == PICK_ANY ) {
+		[self toggleItem:item];
+	}
+}
+
+-(void)rowClicked:(id)sender
+{
+	NSInteger r = tableView.clickedRow;
+	if ( r >= 0 && rows[r].item )
+		[self chooseItem:rows[r].item];
+}
+
+-(void)checkboxClicked:(NSButton *)sender
+{
+	NhItem * item = rows[sender.tag].item;
+	if ( sender.state == NSControlStateValueOn )
+		[checked addObject:item];
+	else
+		[checked removeObject:item];
+}
+
+-(void)setAllChecked:(BOOL)on
+{
+	for ( MenuRow * row in rows ) {
+		if ( row.item ) {
+			if ( on )
+				[checked addObject:row.item];
+			else
+				[checked removeObject:row.item];
+		}
+	}
+	[tableView reloadData];
+}
+
+-(void)selectAll:(id)sender
+{
+	[self setAllChecked:YES];
+}
+
+-(void)sortItems:(id)sender
+{
+	BOOL sorted = sortButton.state == NSControlStateValueOn;
+	// sort the items under each heading, leaving headings and text in place
+	NSUInteger r = 0;
+	while ( r < rows.count ) {
+		if ( rows[r].item == nil ) {
+			++r;
+			continue;
+		}
+		NSUInteger end = r;
+		while ( end < rows.count && rows[end].item )
+			++end;
+		NSRange range = NSMakeRange(r, end - r);
+		NSArray * run = [rows subarrayWithRange:range];
+		NSArray * ordered;
+		if ( sorted ) {
+			ordered = [run sortedArrayUsingComparator:^NSComparisonResult(MenuRow * a, MenuRow * b) {
+				return [SortKey(a.item.title) localizedCaseInsensitiveCompare:SortKey(b.item.title)];
+			}];
+		} else {
+			NSMutableArray * original = [NSMutableArray array];
+			for ( NhItemGroup * group in menuParams.itemGroups ) {
+				for ( NhItem * item in group.items ) {
+					for ( MenuRow * row in run ) {
+						if ( row.item == item )
+							[original addObject:row];
 					}
 				}
-#endif
 			}
-			break;
-	
-		case PICK_ANY:
-			break;
-		
-		default:
-			break;
+			ordered = original;
+		}
+		[rows replaceObjectsInRange:range withObjectsFromArray:ordered];
+		r = end;
 	}
+	[tableView reloadData];
 }
 
--(IBAction)selectAll:(id)sender
+#pragma mark Keys
+
+-(void)installKeyMonitor
 {
-	for ( NSButton * item in [gridView subviews] ) {
-		if ( [item class] == [NSButton class] )  {
-			[item setState:NSControlStateValueOn];
+	__weak MenuWindowController * weakSelf = self;
+	keyMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskKeyDown handler:^NSEvent * _Nullable(NSEvent * _Nonnull event) {
+		MenuWindowController * strongSelf = weakSelf;
+		if ( strongSelf == nil || event.window != strongSelf.window )
+			return event;
+		return [strongSelf handleKey:event] ? nil : event;
+	}];
+}
+
+-(NhItem *)itemWithLetter:(unichar)c
+{
+	for ( MenuRow * row in rows ) {
+		if ( row.item && row.item.inventoryLetter == c )
+			return row.item;
+	}
+	return nil;
+}
+
+-(BOOL)handleKey:(NSEvent *)event
+{
+	if ( event.modifierFlags & (NSEventModifierFlagCommand | NSEventModifierFlagControl) )
+		return NO;
+	NSString * chars = event.characters;
+	if ( chars.length == 0 )
+		return NO;
+	unichar c = [chars characterAtIndex:0];
+	NSInteger highlighted = tableView ? tableView.selectedRow : -1;
+	NhItem * highlightedItem = highlighted >= 0 ? rows[highlighted].item : nil;
+
+	if ( c == 27 ) {
+		[self doCancel:nil];
+		return YES;
+	}
+	if ( c == '\r' || c == 3 ) {
+		if ( how == PICK_ONE && highlightedItem )
+			[self chooseItem:highlightedItem];
+		else
+			[self doAccept:nil];
+		return YES;
+	}
+	if ( c == ' ' ) {
+		if ( how == PICK_ANY && highlightedItem )
+			[self toggleItem:highlightedItem];
+		else
+			[self doAccept:nil];
+		return YES;
+	}
+	if ( how == PICK_NONE || c > 127 )
+		return NO;
+
+	NhItem * item = [self itemWithLetter:c];
+	if ( item ) {
+		[self chooseItem:item];
+		return YES;
+	}
+	if ( isdigit(c) ) {
+		count = count * 10 + (c - '0');
+		return YES;
+	}
+	if ( how == PICK_ANY ) {
+		BOOL hit = NO;
+		for ( MenuRow * row in rows ) {
+			if ( row.item && row.item.group_ch == c ) {
+				[checked addObject:row.item];
+				hit = YES;
+			}
+		}
+		if ( hit ) {
+			[tableView reloadData];
+			return YES;
+		}
+		if ( c == '.' || c == ',' ) {
+			[self setAllChecked:YES];
+			return YES;
+		}
+		if ( c == '-' || c == '\\' ) {
+			[self setAllChecked:NO];
+			return YES;
 		}
 	}
-	[acceptButton setEnabled:YES];
+	return NO;
 }
 
--(BOOL)selectAllInGroup:(char)groupAccel
+#pragma mark Finishing
+
+-(void)finish
 {
-	BOOL hit = NO;
-	for ( NSButton * button in [gridView subviews] ) {
-		if ( [button class] == [NSButton class] )  {
-			NSInteger itemTag = [button tag];
-			id item = [itemDict objectForKey:[NSNumber numberWithInt:itemTag]];
-			if ( item && [item class] == [NhItem class] ) {
-				NhItem * entry = item;
-				if ( entry.group_ch == groupAccel ) {
-					[button setState:NSControlStateValueOn];
-					hit = YES;
-				}
-			}
-		}
+	finished = YES;
+	if ( keyMonitor ) {
+		[NSEvent removeMonitor:keyMonitor];
+		keyMonitor = nil;
 	}
-	if ( hit ) {
-		[acceptButton setEnabled:YES];
-	}
-	return hit;
+	[self.window close];
 }
-
-
--(IBAction)selectUnknownBUC:(id)sender
-{
-	for ( NSButton * item in [gridView subviews] ) {
-		if ( [item class] == [NSButton class] )  {
-			BOOL known = NO;
-			NSString * text = [[item attributedTitle] string];
-			if ( [text rangeOfString:@"blessed"].location != NSNotFound ||
-				 [text rangeOfString:@"cursed"].location != NSNotFound ||
-				 [text rangeOfString:@"uncursed"].location != NSNotFound )
-			{
-				known = YES;
-			}
-			[item setState:known ? NSControlStateValueOff : NSControlStateValueOn];
-		}
-	}	
-	[acceptButton setEnabled:YES];
-}
-
 
 -(void)doAccept:(id)sender
 {
-	// get list of selected tags
-	for ( NSButton * button in [gridView subviews] ) {
-		if ( [button class] == [NSButton class] ) {
-			// add selected item
-			NSInteger key = [button tag];
-			NhItem * item = [itemDict objectForKey:[NSNumber numberWithInt:key]];
-			// check if button state was changed from original value
-			if ( ([button state] == NSControlStateValueOn) != item.selected )  {
-				[item setSelected:YES];
-				[menuParams.selected addObject:item];
-			} else {
-				[item setSelected:NO];				
-			}
+	if ( finished )
+		return;
+	[menuParams.selected removeAllObjects];
+	for ( MenuRow * row in rows ) {
+		if ( row.item && [checked containsObject:row.item] ) {
+			row.item.selected = YES;
+			[menuParams.selected addObject:row.item];
 		}
 	}
-	
-	switch ( [menuParams how] ) {
-		case PICK_NONE:
-			break;
-		case PICK_ONE:
-		case PICK_ANY:
-			[[NhEventQueue instance] addKey:menuParams.selected.count];
-			break;
-	}
-	[[self window] close];
+	if ( how != PICK_NONE )
+		[[NhEventQueue instance] addKey:(int)menuParams.selected.count];
+	[self finish];
 }
 
 -(void)doCancel:(id)sender
 {
-	if ( [menuParams how] != PICK_NONE ) {
+	if ( finished )
+		return;
+	if ( how != PICK_NONE )
 		[[NhEventQueue instance] addKey:-1];
-	}
-	[[self window] close];	
+	[self finish];
 }
 
 -(BOOL)windowShouldClose:(id)sender
 {
 	[self doCancel:sender];
-	return YES;
+	return NO;
 }
 
 -(void)windowWillClose:(NSNotification *)notification
 {
-	if ( RUN_MODAL || [menuParams how] != PICK_NONE ) {
-		[[NSApplication sharedApplication] stopModal];
-	}
-}
-
-
--(void)keyDown:(NSEvent *)theEvent
-{
-	NSString * ch = [theEvent characters];
-	if ( [ch length] > 0 ) {
-		char c = [ch characterAtIndex:0];
-		if ( c == '.' ) {
-			// make '.' a shortcut for select all
-			[self selectAll:self];
-			return;
-		}
-		// check for group accelerator
-		if ( [self selectAllInGroup:c] ) {
-			return;
-		}
-	}
-	[super keyDown:theEvent];
-}
-
-
-- (id)initWithMenu:(NhMenuWindow *)menu
-{
-	if ( self = [super initWithWindowNibName:@"MenuWindow"] ) {
-		menuParams = menu;
-		itemDict = [NSMutableDictionary dictionaryWithCapacity:10];
-	}
-	return self;
-}
-
-
--(void)log:(NSString *)text
-{
-	NSMutableString * result = [NSMutableString stringWithCapacity:20];
-	for ( int i = 0; i < [text length]; ++i ) {
-		char ch = [text characterAtIndex:i];
-		switch ( ch ) {
-			case ' ':
-				[result appendString:@"."];
-				break;
-			case '\t':
-				[result appendString:@"\\t"];
-				break;
-			default:
-				[result appendFormat:@"%c", ch ];
-				break;
-		}
-	}
-	NSLog(@"%@\n", result );
-}
-
--(int)leadingSpaces:(NSString *)text
-{
-	int i = 0;
-	while ( i < [text length] && [text characterAtIndex:i] == ' ' )
-		++i;
-	return i;
-}
-
-
--(void)convertFakeGroupsToRealGroups
-{
-	NhItemGroup		*	currentRealGroup = nil;
-	NSMutableArray	*	remove = [NSMutableArray arrayWithCapacity:0];
-	int					index = 0;
-	
-	for ( NhItemGroup * group in [menuParams itemGroups] ) {
-		
-		// seen in Enhance menu for maxed out skills:
-		if ( [group.title hasPrefix:@"   #  "] ) {
-			[group setTitle: [NSString stringWithFormat:@"      #%@", [group.title substringFromIndex:6]]];
-		}
-		if ( [group.title hasPrefix:@"   *  "] ) {
-			[group setTitle: [NSString stringWithFormat:@"      *%@", [group.title substringFromIndex:6]]];
-		}
-		
-		int leadingSpaces = [self leadingSpaces:group.title];
-		
-		if ( leadingSpaces >= 4 && currentRealGroup ) {
-			
-			// It's not a real group. Convert it to a disabled button under the last real group
-			ANY_P ident = { 0 };
-			ident.a_int = -1;
-			NhItem * item = [[NhItem alloc] initWithTitle:[group.title substringFromIndex:leadingSpaces] identifier:ident accelerator:0 group_accel:0 glyph:NO_GLYPH selected:NO];
-			[currentRealGroup addItem:item];
-			[remove addObject:[NSNumber numberWithInt:index]];
-			--index;
-			
-			// add its items to last real group
-			for ( NhItem * item in group.items ) {
-				
-				// strip leading spaces
-				[item setTitle:[item.title substringFromIndex:[self leadingSpaces:item.title]]];
-
-				[currentRealGroup addItem:item];
-			}
-			
-		} else {			
-
-			// add its items to last real group
-			for ( NhItem * item in group.items ) {
-				// strip leading spaces
-				[item setTitle:[item.title substringFromIndex:[self leadingSpaces:item.title]]];
-			}
-			
-			currentRealGroup = group;
-		}
-		++index;
-	}
-	
-	for ( NSNumber * idx in remove ) {
-		index = [idx intValue];
-		NSIndexPath * indexPath = [NSIndexPath indexPathWithIndex:index];
-		[menuParams removeItemAtIndexPath:indexPath];
-	}
-}
-
-
--(NSString *)stringWithSpacesReplacedByTabs:(NSString *)text
-{
-	NSMutableString * result = [NSMutableString stringWithString:text];
-	for ( int pos = 0; pos+1 < [result length]; ++pos ) {
-		if ( [result characterAtIndex:pos] == ' ' && [result characterAtIndex:pos+1] == ' ' ) {
-			// string of two or more spaces
-			int end = pos+2;
-			while ( end < [result length] && [result characterAtIndex:end] == ' ' )
-				++end;
-			[result replaceCharactersInRange:NSMakeRange(pos, end-pos) withString:@"\t"];
-			
-		} else if ( [result characterAtIndex:pos] == ' ' && [result characterAtIndex:pos+1] == '[' ) {
-			// space followed by bracketed list
-			[result replaceCharactersInRange:NSMakeRange(pos,1) withString:@"\t"];
-		}
-	}
-	return result;
-}
-
--(void)convertSpacesToTabs
-{
-	for ( NhItemGroup * group in [menuParams itemGroups] ) {
-		
-		NSString * title = [self stringWithSpacesReplacedByTabs:group.title];
-		[group setTitle:title];
-		
-		for ( NhItem * item in [group items] ) {
-			
-			title = [self stringWithSpacesReplacedByTabs:item.title];
-			[item setTitle:title];
-		}
-	}
-}
-
-
--(void)convertTrueFalseTags
-{
-	for ( NhItemGroup * group in [menuParams itemGroups] ) {
-		
-		for ( NhItem * item in group.items ) {
-			
-			NSString * title = item.title;
-			
-			if ( [title hasSuffix:@"\t[true]"] ) {
-				title = [title substringToIndex:[title length] - 7];
-				[item setTitle:title];
-				[item setSelected:YES];
-			} else if ( [title hasSuffix:@"\t[false]"] ) {
-			   title = [title substringToIndex:[title length] - 8];
-			   [item setTitle:title];
-			   [item setSelected:NO];
-		   }
-		}
-	}
-}
-
-
--(void)expandTitleTextWithKeysAndDescriptions
-{
-	const char	*	nextKey		= "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-	for ( NhItemGroup * group in [menuParams itemGroups] ) {
-		
-		char group_accel = 0;
-		
-		for ( NhItem * item in [group items] ) {			
-			
-			BOOL isEnabled = item.identifier.a_int != -1;
-			int keyEquiv = item.inventoryLetter;
-			if ( keyEquiv == 0 && isEnabled && *nextKey ) {
-				keyEquiv = *nextKey++;
-				[item setInventoryLetter:keyEquiv];
-			}
-			
-			// get key
-			NSString * title = isEnabled ? keyEquiv ? [NSString stringWithFormat:@" (%c)",keyEquiv] : @" ( )" : @"";
-			// add title
-			title = [title stringByAppendingFormat:@"\t%@", item.title];
-			// add detail
-			if ( item.detail ) {
-				title = [title stringByAppendingFormat:@" (%@)", item.detail];
-			}
-			if ( group_accel > 0 && group_accel != item.group_ch )
-				group_accel = -1;
-			else 
-				group_accel = item.group_ch;
-				
-			// save expanded title
-			[item setTitle:title];
-		}
-
-		if ( group_accel > 0 ) {
-			// show group accelerator in title
-			[group setTitle:[group.title stringByAppendingFormat:@"   %c", group_accel]];
-		}
-	}
-}
-
-
-
--(void)adjustColumnWidths:(NSMutableArray *)widths forString:(NSString *)text attributes:(NSDictionary *)attributes glyphWidth:(CGFloat)glyphWidth
-{
-	NSArray * fields = [text componentsSeparatedByString:@"\t"];
-	int idx = 0;
-	
-	for ( NSString * field in fields ) {
-
-		CGFloat width = [field sizeWithAttributes:attributes].width;
-		
-		if ( idx == 0 )
-			width += glyphWidth;
-		
-		if ( idx >= [widths count] ) {
-			[widths addObject:[NSNumber numberWithFloat:width]];
-		} else {
-			if ( width > [[widths objectAtIndex:idx] floatValue] ) {
-				[widths replaceObjectAtIndex:idx withObject:[NSNumber numberWithFloat:width]];
-			}
-		}
-		++idx;
-	}
-}
-
-- (NSMutableArray *)computeTabStopsWithGroupAttr:(NSDictionary *)groupAttributes itemAttr:(NSDictionary *)itemAttributes
-{
-	NSMutableArray	*	itemWidths	= [NSMutableArray array];
-	NSMutableArray	*	groupWidths	= [NSMutableArray array];
-
-	for ( NhItemGroup * group in [menuParams itemGroups] ) {
-		
-		// if group has no items or has no tabs then ignore it for purposes of calculating tabs
-		if ( [[group items] count] > 0  &&  [group.title rangeOfString:@"\t"].location != NSNotFound ) {
-			[self adjustColumnWidths:itemWidths forString:group.title attributes:groupAttributes glyphWidth:0.0];
-		} else {
-			[self adjustColumnWidths:groupWidths forString:group.title attributes:groupAttributes glyphWidth:0.0];
-		}
-		
-		for ( NhItem * item in [group items] ) {
-			CGFloat glyphWidth = 0.0;
-			if ( [item glyph] != NO_GLYPH ) {
-				glyphWidth = [[TileSet instance] imageSize].width;
-			}
-			[self adjustColumnWidths:itemWidths forString:item.title attributes:itemAttributes glyphWidth:glyphWidth];
-		}
-	}
-	
-	// only use group tabs if we never saw any items
-	if ( [itemWidths count] == 0 )
-		itemWidths = groupWidths;
-	
-	// convert widths to tab stops
-	NSMutableArray * tabs = [NSMutableArray arrayWithCapacity:[itemWidths count]];
-	CGFloat pos = 0.0;
-	CGFloat SPACE = 10.0;
-	for ( NSNumber * width in itemWidths ) {
-		pos += ceil([width floatValue]) + SPACE;
-		NSTextTab * tab = [[NSTextTab alloc] initWithType:NSLeftTabStopType location:pos];
-		[tabs addObject:tab];
-	}
-	
-	return tabs;
-}
-
-static NSString * skipPrefix( NSString * s, __strong NSString * list[] )
-{
-	for ( int i = 0; list[i] != nil; ++i ) {
-		if ( [s hasPrefix:list[i]] )
-			return [s substringFromIndex:[list[i] length]];
-	}
-	return s;
-};
-
-
-static NSString * cleanAttributedString( NSString * s, BOOL decorated )
-{
-	int i = 0;
-	// skip leading icon
-	while ( [s characterAtIndex:i] > 255 )
-		++i;
-	while ( [s characterAtIndex:i] == ' ' )
-		++i;
-	if ( [s characterAtIndex:i] == '(' )
-		i += 4;
-	s = [s substringFromIndex:i];
-	
-	if ( !decorated ) {
-		// FIXME: doesn't handle plurals, etc.
-		static NSString * amt[] = {
-			@"a ",
-			@"an ",
-			@"the ",
-			nil
-		};
-		static NSString * buc[] = {
-			@"blessed ",
-			@"cursed ",
-			@"uncursed ",
-			nil
-		};
-		static NSString * corrode1[] = {
-			@"very ",
-			@"thoroughly ",
-			nil
-		};
-		static NSString * corrode2[] = {
-			@"rustproof ",
-			@"fireproof ",
-			@"corodeproof ",
-			@"fixed ",
-			@"rusty ",
-			@"burnt ",
-			@"corroded ",
-			@"rotted ",	
-			nil
-		};
-		
-		// skip quantity
-		s = skipPrefix(s, amt);
-		while ( [[NSCharacterSet decimalDigitCharacterSet] characterIsMember:[s characterAtIndex:0]] )
-			s = [s substringFromIndex:1];
-		if ( [s characterAtIndex:0] == ' ' )
-			s = [s substringFromIndex:1];
-		// skip buc
-		s = skipPrefix(s, buc);
-		// skip corrosion
-		s = skipPrefix(s, corrode1);
-		s = skipPrefix(s, corrode2);
-	}
-	//	NSLog(@"'%@'\n",s);
-	
-	return s;
-}
-
-static NSInteger compareButtonText(id button1, id button2, void * context )
-{
-	NSString * s1 = [[button1 attributedTitle] string];
-	NSString * s2 = [[button2 attributedTitle] string];
-	
-	s1 = cleanAttributedString(s1, YES);
-	s2 = cleanAttributedString(s2, YES);
-	
-	return [s1 compare:s2 options:NSCaseInsensitiveSearch];
-}
-
--(IBAction)sortItems:(id)sender
-{
-	BOOL useDefault = [(NSButton *)sender state] == NSControlStateValueOff;
-	
-	for ( NhItemGroup * group in [menuParams itemGroups] ) {
-		int len = [[group items] count];
-		// get list of buttons in this group
-		NSMutableArray * origButtonList = [NSMutableArray arrayWithCapacity:len];
-		for ( NhItem * item in [group items] ) {
-			int tag = [[[itemDict allKeysForObject:item] objectAtIndex:0] intValue];
-			NSButton * button = [gridView viewWithTag:tag];
-			[origButtonList addObject:button];
-		}
-		// sort buttons alphabetically
-		NSArray * newButtonList = useDefault 
-				? [origButtonList copy]
-				: [origButtonList sortedArrayUsingFunction:compareButtonText context:NULL];
-		// get list of button locations
-		NSMutableArray * posList = [NSMutableArray arrayWithCapacity:len];
-		for ( NSButton * button in origButtonList ) {
-			[posList addObject:[NSValue valueWithPoint:button.frame.origin]];
-		}
-		// sort button positions low to high
-		NSArray * posList2 = [posList sortedArrayUsingComparator:^(NSValue * o1, NSValue * o2)
-							  {
-								  NSPoint p1 = [o1 pointValue], p2 = [o2 pointValue]; 
-								  return p1.y < p2.y ? NSOrderedAscending
-														: p1.y > p2.y ? NSOrderedDescending
-														: NSOrderedSame; 
-							  }];
-		// assign new button locations
-		for ( int i = 0; i < len; ++i ) {
-			NSButton * button = [newButtonList objectAtIndex:i];
-			NSPoint pt = [[posList2 objectAtIndex:i] pointValue];
-			[button setFrameOrigin:pt];
-		}
-	}
-}
-
-typedef enum { BUC_ENUM_BLESSED, BUC_ENUM_UNCURSED, BUC_ENUM_CURSED }  BUC_ENUM;
-static BUC_ENUM GetBUC( NSString * text )
-{
-	// get blessed/cursed status
-	static struct {
-		NSString *	text;
-		BUC_ENUM	buc;
-	} List[] = {
-		@" blessed",	BUC_ENUM_BLESSED,
-		@" holy",		BUC_ENUM_BLESSED,
-		@" cursed",		BUC_ENUM_CURSED,
-		@" unholy",		BUC_ENUM_CURSED,
-	};
-	BUC_ENUM buc = BUC_ENUM_UNCURSED;
-	NSUInteger pos = NSNotFound;
-	for ( int i = 0; i < sizeof List/sizeof List[0]; ++i) {
-		NSUInteger loc = [text rangeOfString:List[i].text].location;
-		if ( loc < pos ) {
-			pos = loc;
-			buc = List[i].buc;
-		}
-	}
-	return buc;
-}
-
--(void)windowDidLoad
-{
-	NSSize						minimumSize = [[self window] frame].size;
-	NSFont					*	groupFont	= [NSFont labelFontOfSize:15];
-	int							how			= [menuParams how];
-	NSInteger					itemTag		= 1;
-
-	BOOL showShortcuts = how == PICK_ANY 
-					&& ([[menuParams itemGroups] count] != 1
-						||  ![[[[menuParams itemGroups] objectAtIndex:0] title] isEqualToString:@"All"]);
-
-	// add new labels
-	CGFloat groupIndent	= 25.0;
-	CGFloat itemIndent	= 40.0;
-	NSRect  viewRect = [gridView bounds];
-
-	while ( gridView.numberOfColumns > 1 ) {
-		[gridView removeColumnAtIndex:0];
-	}
-
-	// force gridView to be same size as containing view
-	[gridView setTranslatesAutoresizingMaskIntoConstraints:NO];
-	[gridView.superview setTranslatesAutoresizingMaskIntoConstraints:NO];
-	[NSLayoutConstraint activateConstraints:@[
-		[gridView.leadingAnchor constraintEqualToAnchor:gridView.superview.leadingAnchor constant:20],
-		[gridView.trailingAnchor constraintEqualToAnchor:gridView.superview.trailingAnchor constant:-20],
-		[gridView.topAnchor constraintEqualToAnchor:gridView.superview.topAnchor constant:20],
-		[gridView.bottomAnchor constraintEqualToAnchor:gridView.superview.bottomAnchor constant:-20]
-	]];
-
-	// center cells vertically
-	gridView.yPlacement = NSGridCellPlacementCenter;
-
-	// fix up the weirdness associated with #enhance menu
-	[self convertFakeGroupsToRealGroups];
-
-	// add key equivalents and expand title text
-	[self expandTitleTextWithKeysAndDescriptions];
-	
-	if ( !iflags.menu_tab_sep ) {
-		// convert runs of spaces to tabs, to we can generate tab stops for them
-		[self convertSpacesToTabs];
-	}
-	
-	// remove true/false column in options window
-	[self convertTrueFalseTags];
-
-	CGFloat checkboxWidth = 32.0;	// depends on NSButtonCell implementation
-
-	// loop through menu items and create labels/button for everything
-	int row = 0;
-	NSMutableIndexSet * spanningRows = [NSMutableIndexSet indexSet];
-	for ( NhItemGroup * group in [menuParams itemGroups] ) {
-		
-		NSString * title = [group title];
-
-		NSRect rect = NSMakeRect(groupIndent, 0, viewRect.size.width, 10 );
-		if ( [title hasPrefix:@"\t"] ) {
-			// group is indented, so compensate for button image size
-			rect.origin.x += checkboxWidth;
-		}
-		
-		// create text box for group
-		NSMutableArray * columns = [NSMutableArray array];
-
-		// dummy cell above button column
-		if ( [title containsChar:'\t'] ) {
-			title = [@" \t" stringByAppendingString:title];
-		}
-
-		// create title attributed string
-		for ( NSString * text in [title componentsSeparatedByString:@"\t"] ) {
-			NSTextField * label = [NSTextField labelWithString:text];
-			[label setFont:groupFont];
-			[columns addObject:label];
-		}
-		[gridView addRowWithViews:columns];
-		if ( row == 0 ) {
-			[gridView removeRowAtIndex:0];
-		}
-		if ( columns.count == 1 ) {
-			[spanningRows addIndex:gridView.numberOfRows - 1];
-		}
-		++row;
-
-		for ( NhItem * item in [group items] ) {
-
-			[columns removeAllObjects];
-
-			// button is disabled if identifier is -1 (which we set zero in convertFakeGroupsToRealGroups)
-			BOOL isEnabled = item.identifier.a_int != -1 || how == PICK_NONE;
-
-			NSRect rect = NSMakeRect(itemIndent, 0, viewRect.size.width, 10 );
-			NSButton * button = [[NSButton alloc] initWithFrame:rect];	
-			[button setButtonType:how == PICK_ANY ? NSButtonTypeSwitch
-								 : how == PICK_ONE ? NSButtonTypeRadio
-								 : NSButtonTypeMomentaryChange];
-			[button setBordered:NO];
-			[button setTarget:self];
-			[button setAction:@selector(buttonClick:)];
-			if ( item.selected ) {
-				[button setState:NSControlStateValueOn];
-			}
-
-			// set a unique ID for button to map it to item
-			[button setTag:itemTag];
-			[itemDict setObject:item forKey:[NSNumber numberWithInt:itemTag]];
-			++itemTag;
-						
-			if ( isEnabled && item.inventoryLetter ) {
-				[button setKeyEquivalent:[NSString stringWithFormat:@"%c", item.inventoryLetter]];
-			}
-			[button setEnabled:isEnabled];
-
-			// create attribute string containing just the image (if any)
-			NSMutableAttributedString * aString;
-			int glyph = [item glyph];
-			if ( glyph != NO_GLYPH ) {
-				// get glyph image
-				NSImage * image = [[TileSet instance] imageForGlyph:glyph enabled:YES];
-				
-				// create attributed string with glyph
-				NSTextAttachment * attachment = [[NSTextAttachment alloc] init];
-				[(NSCell *)[attachment attachmentCell] setImage:image];
-				aString = [[NSAttributedString attributedStringWithAttachment:attachment] mutableCopy];
-
-			} else {
-				NSAttributedString * s = [[NSAttributedString alloc] initWithString:@""];
-				aString = [s mutableCopy];
-			}
-			
-			// get title
-			NSArray * fields = [[item title] componentsSeparatedByString:@"\t"];
-			NSString * title = fields[0];
-
-			// add title to string and adjust vertical baseline of text so it aligns with icon
-			[[aString mutableString] appendString:title];
-
-#if 0
-			// get blessed/cursed status
-			BUC_ENUM buc = GetBUC( title );
-			if ( buc != BUC_UNCURSED )
-				[aString addAttribute:NSForegroundColorAttributeName
-								value:(buc == BUC_ENUM_BLESSED ? [NSColor systemBlueColor] : [NSColor systemRedColor])
-								range:NSMakeRange(0,[[aString mutableString] length])];
-#endif
-			// adjust baseline of text so it is vertically centered with tile
-			if ( glyph != NO_GLYPH ) {
-				CGFloat offset = [[TileSet instance] imageSize].height;
-				offset = (offset - 8) / 2;
-				[aString addAttribute:NSBaselineOffsetAttributeName value:[NSNumber numberWithDouble:offset] range:NSMakeRange(1,[[aString string] length]-1)];
-			}
-			
-			// set button title
-			[button setAttributedTitle:aString];
-			[button sizeToFit];
-			// with a tile in the title, the button under-reports its width and wraps
-			[button.widthAnchor constraintGreaterThanOrEqualToConstant:button.frame.size.width].active = YES;
-
-			[columns addObject:button];
-
-
-#if 0
-			int maxAmt = [item maxAmount];
-#endif
-
-			for ( int column = 1; column < fields.count; ++column ) {
-				NSTextField * label = [NSTextField labelWithString:fields[column]];
-				[columns addObject:label];
-			}
-			[gridView addRowWithViews:columns];
-			if ( row == 0 ) {
-				[gridView removeRowAtIndex:0];
-			}
-			++row;
-		}
-	}
-
-	// the column left from the XIB has a fixed width
-	for ( NSInteger c = 0; c < gridView.numberOfColumns; ++c ) {
-		[gridView columnAtIndex:c].width = NSGridViewSizeForContent;
-	}
-
-	// a title on its own spans the row, and spare width goes to the last column
-	if ( gridView.numberOfColumns > 1 ) {
-		[spanningRows enumerateIndexesUsingBlock:^(NSUInteger idx, BOOL *stop) {
-			NSGridRow * gridRow = [gridView rowAtIndex:idx];
-			NSView * label = [gridRow cellAtIndex:0].contentView;
-			[gridRow mergeCellsInRange:NSMakeRange(0, gridView.numberOfColumns)];
-			[label setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
-			[gridView.widthAnchor constraintGreaterThanOrEqualToConstant:label.intrinsicContentSize.width].active = YES;
-		}];
-		for ( NSInteger c = 0; c < gridView.numberOfColumns - 1; ++c ) {
-			for ( NSInteger r = 0; r < gridView.numberOfRows; ++r ) {
-				if ( ![spanningRows containsIndex:r] ) {
-					[[gridView cellAtColumnIndex:c rowIndex:r].contentView setContentHuggingPriority:500 forOrientation:NSLayoutConstraintOrientationHorizontal];
-				}
-			}
-		}
-	}
-
-	if ( !showShortcuts ) {
-		[selectAll setHidden:YES];
-	}
-
-	if ( how == PICK_NONE ) {
-		[acceptButton setTitle:@"Close"];
-		[acceptButton setEnabled:YES];
-		[cancelButton setHidden:YES];
-	} else {
-		[acceptButton setEnabled:NO];
-		[cancelButton setHidden:NO];
-	}
-	
-	// get max item width
-	CGFloat width = 0;
-	for ( NSView * view in [gridView subviews] ) {
-		NSRect rc = [view frame];
-		if ( rc.origin.x + rc.size.width > width )
-			width = rc.origin.x + rc.size.width;
-	}
-	
-	NSSize viewSizeOrig = [gridView frame].size;
-	
-	// size view
-	NSSize bestSize = [gridView fittingSize];
-	viewRect.size.height = bestSize.height;
-	viewRect.size.width  = bestSize.width;
-	[gridView setFrame:viewRect];
-	[gridView setNeedsDisplay:YES];
-
-	// size containing window
-	NSRect rc = [[self window] frame];
-	rc.size.height += viewRect.size.height - viewSizeOrig.height;
-	rc.size.width  += viewRect.size.width  - viewSizeOrig.width;
-	
-	// widen by size of scroll bar in case there is a vertical scrollbar
-	rc.size.width += [NSScroller scrollerWidthForControlSize:NSControlSizeRegular
-											   scrollerStyle:NSScrollerStyleLegacy];
-	rc.size.width += 5; // for aesthetics
-	
-	if ( rc.size.height < minimumSize.height )
-		rc.size.height = minimumSize.height;
-	if ( rc.size.width < minimumSize.width )
-		rc.size.width = minimumSize.width;
-	
-	[[self window] setFrame:rc display:YES];
-
-	[gridView scrollPoint:NSMakePoint(0,gridView.bounds.size.height)];
+	[[NSApplication sharedApplication] stopModal];
 }
 
 + (void)menuWindowWithMenu:(NhMenuWindow *)menu
 {
 	MenuWindowController * win = [[MenuWindowController alloc] initWithMenu:menu];
-	NSString * prompt = [menu prompt];
-	if ( prompt ) {
-		[[win window] setTitle:prompt];
-	}
 	[win showWindow:win];
-
-	if ( !RUN_MODAL && [win->menuParams how] == PICK_NONE ) {
-		// we can run detached
-	} else {
-		// need to run modal
-		[[NSApplication sharedApplication] runModalForWindow:[win window]];
-	}
+	[[NSApplication sharedApplication] runModalForWindow:[win window]];
 }
 
 @end

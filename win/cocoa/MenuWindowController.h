@@ -27,25 +27,8 @@
 #import "Protocols.h"
 #import "NhMenuWindow.h"
 
-@interface MenuWindowController : NSWindowController <NSWindowDelegate> {
-	
-	NhMenuWindow		*	menuParams;
-	
-	NSMutableDictionary	*	itemDict;
-
-	IBOutlet NSGridView	*	gridView;
-	IBOutlet NSButton	*	cancelButton;
-	IBOutlet NSButton	*	acceptButton;
-
-	IBOutlet NSButton	*	selectAll;
-}
+@interface MenuWindowController : NSWindowController <NSWindowDelegate, NSTableViewDataSource, NSTableViewDelegate>
 
 + (void)menuWindowWithMenu:(NhMenuWindow *)menu;
-
--(IBAction)doAccept:(id)sender;
--(IBAction)doCancel:(id)sender;
--(IBAction)selectAll:(id)sender;
--(IBAction)sortItems:(id)sender;
--(IBAction)selectUnknownBUC:(id)sender;
 
 @end

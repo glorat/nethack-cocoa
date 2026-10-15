@@ -465,6 +465,7 @@ void cocoa_add_menu(winid wid, const glyph_info *glyphinfo, const ANY_P *identif
 		[win.currentItemGroup addItem:i];
 	} else {
 		NhItemGroup *g = [[NhItemGroup alloc] initWithTitle:title];
+		g.attr = attr;
 		[win addItemGroup:g];
 	}
 }

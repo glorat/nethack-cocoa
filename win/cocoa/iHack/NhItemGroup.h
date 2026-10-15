@@ -37,6 +37,7 @@
 @property (nonatomic, readonly) NSString *title;
 @property (nonatomic, readonly) NSArray *items;
 @property (nonatomic, assign) BOOL dummy;
+@property (nonatomic, assign) int attr;
 
 - (id) initWithTitle:(NSString *)t dummy:(BOOL)d;
 - (id) initWithTitle:(NSString *)t;
