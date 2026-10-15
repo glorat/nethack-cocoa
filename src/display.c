@@ -2560,8 +2560,13 @@ get_bkglyph_and_framecolor(
                 idx = (flags.dark_room && iflags.use_color)
                          ? DARKROOMSYM : S_stone;
         }
+#ifdef COCOA_GRAPHICS
+        /* lit floor too, so transparent tiles are drawn over it */
+        tmp_bkglyph = cmap_to_glyph(idx);
+#else
         if (idx != S_room)
             tmp_bkglyph = cmap_to_glyph(idx);
+#endif
     }
     *bkglyph = tmp_bkglyph;
 #if 0
