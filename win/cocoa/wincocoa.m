@@ -490,6 +490,8 @@ int cocoa_select_menu(winid wid, int how, menu_item **selected)
 	NhMenuWindow * win = (NhMenuWindow *) g_WindowDict[@(wid)];
 
 	win.how = how;
+	// pick menus wait for their answer in nextEvent; PICK_NONE has none to wait for
+	win.blocking = (how == PICK_NONE);
 	*selected = NULL;
 	[[MainWindowController instance] showMenuWindow:win];
 	

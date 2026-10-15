@@ -13,6 +13,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - Engravings look like faint scratches on the floor instead of a stone slab.
 - Walls fill their whole square, so there's no dark gap between a wall and the room beside it.
 - The app no longer freezes when you hover over the map after a game ends.
+- Read-only lists such as the dungeon overview now wait for you to close them before the game goes on. At the end of a game, the tombstone and score list no longer open on top of the overview.
 - Wand and spell beams are drawn sharply at full size instead of enlarged from the 16px tiles, and each kind looks different: lightning is jagged, poison gas is a haze, death is a dark ray.
 - Water looks like a deeper version of a pool or moat, and lava, ice, air and cloud are calmer across large areas.
 - The download is about 30 MB smaller, because the painted tiles now use 256 colours.

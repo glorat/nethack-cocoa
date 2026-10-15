@@ -718,7 +718,9 @@ static MainWindowController* instance;
 - (void)showMenuWindow:(NhMenuWindow *)w {
 	if (![NSThread isMainThread]) {
 		BOOL blocking = w.blocking;
+		[self.appDelegate unlockNethackCore];
 		[self performSelectorOnMainThread:@selector(showMenuWindow:) withObject:w waitUntilDone:blocking];
+		[self.appDelegate lockNethackCore];
 	} else {
 		[MenuWindowController menuWindowWithMenu:w];
 	}
