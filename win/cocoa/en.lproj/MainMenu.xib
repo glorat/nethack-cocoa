@@ -862,18 +862,34 @@
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="1511"/>
-                                        <menuItem title="Bigger" tag="3" keyEquivalent="+" id="1512">
+                                        <menuItem title="Bigger" tag="3" id="1512">
                                             <connections>
                                                 <action selector="modifyFont:" target="420" id="1538"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Smaller" tag="4" keyEquivalent="-" id="1513">
+                                        <menuItem title="Smaller" tag="4" id="1513">
                                             <connections>
                                                 <action selector="modifyFont:" target="420" id="1540"/>
                                             </connections>
                                         </menuItem>
                                     </items>
                                 </menu>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="zm0-sp-001"/>
+                            <menuItem title="Zoom In" keyEquivalent="=" id="zm1-in-001">
+                                <connections>
+                                    <action selector="zoomIn:" target="943" id="zm1-in-002"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Zoom Out" keyEquivalent="-" id="zm2-ou-001">
+                                <connections>
+                                    <action selector="zoomOut:" target="943" id="zm2-ou-002"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Actual Size" keyEquivalent="0" id="zm3-as-001">
+                                <connections>
+                                    <action selector="actualSize:" target="943" id="zm3-as-002"/>
+                                </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="1022"/>
                             <menuItem title="Close Window" keyEquivalent="w" id="1221">

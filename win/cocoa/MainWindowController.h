@@ -82,6 +82,9 @@
 - (IBAction)terminateApplication:(id)sender;
 - (IBAction)enableAsciiMode:(id)sender;
 - (IBAction)addTileSet:(id)sender;
+- (IBAction)zoomIn:(id)sender;
+- (IBAction)zoomOut:(id)sender;
+- (IBAction)actualSize:(id)sender;
 
 - (void)initWindows;
 - (void)preferenceUpdate:(NSString *)pref;

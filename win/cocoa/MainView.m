@@ -48,6 +48,9 @@
 
 NSStringEncoding	codepage437encoding;
 
+static const CGFloat zoomLevels[] = { 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 4.0 };
+static const int zoomLevelCount = sizeof zoomLevels / sizeof zoomLevels[0];
+
 
 -(BOOL)isFlipped
 {
@@ -63,7 +66,7 @@ NSStringEncoding	codepage437encoding;
 		// compute required size for selected font
 		NSSize total = { 0, 0 };
 		NSCell * cell = [[NSCell alloc] initTextCell:@""];
-		[cell setFont:asciiFont];
+		[cell setFont:[self zoomedAsciiFont]];
 		[cell setEditable:NO];
 		[cell setSelectable:NO];
 		for ( int ch = 32; ch < 127; ++ch ) {
@@ -85,6 +88,8 @@ NSStringEncoding	codepage437encoding;
 	} else {
 
 		tileSize = [TileSet instance].displaySize;
+		tileSize.width *= zoom;
+		tileSize.height *= zoom;
 
 	}
 
@@ -105,6 +110,75 @@ NSStringEncoding	codepage437encoding;
 - (NSFont *)asciiFont
 {
 	return asciiFont;
+}
+
+- (NSFont *)zoomedAsciiFont
+{
+	return [NSFont fontWithDescriptor:[asciiFont fontDescriptor] size:[asciiFont pointSize] * zoom];
+}
+
+- (CGFloat)zoom
+{
+	return zoom;
+}
+
+- (void)setZoom:(CGFloat)z
+{
+	if ( z < zoomLevels[0] )
+		z = zoomLevels[0];
+	if ( z > zoomLevels[zoomLevelCount-1] )
+		z = zoomLevels[zoomLevelCount-1];
+
+	if ( tileSize.width <= 0 || tileSize.height <= 0 ) {
+		zoom = z;
+		[self enableAsciiMode:iflags.wc_ascii_map];
+		return;
+	}
+
+	// keep the map location at the center of the view in place
+	NSRect visible = [self visibleRect];
+	NSPoint center = NSMakePoint( NSMidX(visible) / tileSize.width, NSMidY(visible) / tileSize.height );
+
+	zoom = z;
+	[self enableAsciiMode:iflags.wc_ascii_map];
+
+	visible = [self visibleRect];
+	[self scrollPoint:NSMakePoint( center.x * tileSize.width - visible.size.width/2,
+								   center.y * tileSize.height - visible.size.height/2 )];
+}
+
+- (void)zoomIn
+{
+	for ( int i = 0; i < zoomLevelCount; ++i ) {
+		if ( zoomLevels[i] > zoom + 0.01 ) {
+			[self setZoom:zoomLevels[i]];
+			return;
+		}
+	}
+}
+
+- (void)zoomOut
+{
+	for ( int i = zoomLevelCount-1; i >= 0; --i ) {
+		if ( zoomLevels[i] < zoom - 0.01 ) {
+			[self setZoom:zoomLevels[i]];
+			return;
+		}
+	}
+}
+
+- (void)magnifyWithEvent:(NSEvent *)event
+{
+	pendingMagnification += [event magnification];
+	if ( pendingMagnification > 0.15 ) {
+		pendingMagnification = 0;
+		[self zoomIn];
+	} else if ( pendingMagnification < -0.15 ) {
+		pendingMagnification = 0;
+		[self zoomOut];
+	}
+	if ( [event phase] & (NSEventPhaseEnded | NSEventPhaseCancelled) )
+		pendingMagnification = 0;
 }
 
 - (id)initWithFrame:(NSRect)frame {
@@ -144,6 +218,7 @@ NSStringEncoding	codepage437encoding;
 			/* CLR_WHITE			*/	[NSColor whiteColor],
 		];
 		asciiFont = [NSFont boldSystemFontOfSize:24.0];
+		zoom = 1.0;
 	}
 		
 	return self;
@@ -189,7 +264,7 @@ NSStringEncoding	codepage437encoding;
 		NSMutableAttributedString * aString = [[NSMutableAttributedString alloc] initWithString:@"X"];
 		NSRange rangeAll = NSMakeRange(0,[aString length]);
 		[aString setAlignment:NSTextAlignmentCenter range:rangeAll];
-		[aString addAttribute:NSFontAttributeName value:asciiFont range:rangeAll];
+		[aString addAttribute:NSFontAttributeName value:[self zoomedAsciiFont] range:rangeAll];
 		
 		for (int j = 0; j < ROWNO; ++j) {
 			for (int i = 0; i < COLNO; ++i) {

@@ -177,6 +177,9 @@ static MainWindowController* instance;
 			font = [NSFont systemFontOfSize:14.0];
 		}
 		[mainView setAsciiFont:font];
+
+		CGFloat zoom = [[NSUserDefaults standardUserDefaults] floatForKey:@"MapZoom"];
+		[mainView setZoom:zoom > 0 ? zoom : 1.0];
 		
 		// place check mark on ASCII menu item
 		[asciiModeMenuItem setState:iflags.wc_ascii_map ? NSControlStateValueOn : NSControlStateValueOff];
@@ -206,6 +209,7 @@ static MainWindowController* instance;
 	[[NSUserDefaults standardUserDefaults] setFloat:[font pointSize] forKey:@"AsciiFontSize"];
 	BOOL	useAscii = iflags.wc_ascii_map;
 	[[NSUserDefaults standardUserDefaults] setBool:useAscii forKey:@"UseAscii"];
+	[[NSUserDefaults standardUserDefaults] setFloat:[mainView zoom] forKey:@"MapZoom"];
 	[[NSUserDefaults standardUserDefaults] setBool:self.useSpeech forKey:@"UseSpeech"];
 	
 	// save user defined tile sets
@@ -278,6 +282,21 @@ static MainWindowController* instance;
 	[menuItem setState:enable ? NSControlStateValueOn : NSControlStateValueOff];
 	
 	[mainView enableAsciiMode:enable];
+}
+
+- (IBAction)zoomIn:(id)sender
+{
+	[mainView zoomIn];
+}
+
+- (IBAction)zoomOut:(id)sender
+{
+	[mainView zoomOut];
+}
+
+- (IBAction)actualSize:(id)sender
+{
+	[mainView setZoom:1.0];
 }
 
 - (IBAction)changeFont:(id)sender

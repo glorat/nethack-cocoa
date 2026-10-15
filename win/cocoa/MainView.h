@@ -38,6 +38,9 @@
 	
 	NSArray	*	asciiColors;
 	NSFont	*	asciiFont;
+
+	CGFloat		zoom;
+	CGFloat		pendingMagnification;
 }
 
 @property (strong) IBOutlet NSMenu * contextMenu;
@@ -47,6 +50,10 @@
 - (NSFont *)asciiFont;
 - (BOOL)setAsciiFont:(NSFont *)font;
 - (void)enableAsciiMode:(BOOL)enable;
+- (CGFloat)zoom;
+- (void)setZoom:(CGFloat)z;
+- (void)zoomIn;
+- (void)zoomOut;
 
 - (IBAction)showContextInfo:(id)sender;
 - (IBAction)doWebSearch:(id)sender;
