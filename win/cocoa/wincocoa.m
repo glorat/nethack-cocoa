@@ -749,5 +749,11 @@ win_request_info *cocoa_ctrl_nhwindow(winid wid, int request, win_request_info *
 // from tty port
 void cocoa_player_selection(void)
 {
+	int ro = flags.initrole, ra = flags.initrace, g = flags.initgend, a = flags.initalign;
+
+	// fully specified via options (e.g. NETHACKOPTIONS): no dialog, like the other ports
+	if (ro >= 0 && ra >= 0 && g >= 0 && a >= 0
+		&& validrole(ro) && validrace(ro, ra) && validgend(ro, ra, g) && validalign(ro, ra, a))
+		return;
 	[[MainWindowController instance] showPlayerSelection];
 }
