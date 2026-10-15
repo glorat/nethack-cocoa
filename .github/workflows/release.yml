@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="0.0.0-dev"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: >
+          make -C win/cocoa
+          ARCHFLAGS="-arch arm64 -arch x86_64"
+          VERSION=${{ steps.version.outputs.version }}
+          BUILD_NUMBER=${{ github.run_number }}
+
+      - name: Check
+        run: |
+          app=win/cocoa/build/NetHack.app
+          lipo -archs "$app/Contents/MacOS/NetHack" | grep -q x86_64
+          lipo -archs "$app/Contents/MacOS/NetHack" | grep -q arm64
+          codesign --verify --deep "$app"
+          test "$(head -c 4 win/cocoa/Resources/tiles/tiles128.png | xxd -p)" = 89504e47
+
+      - name: Package
+        id: package
+        run: |
+          zip="NetHack-${{ steps.version.outputs.version }}-macOS.zip"
+          ditto -c -k --keepParent win/cocoa/build/NetHack.app "$zip"
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.zip }}
+          path: ${{ steps.package.outputs.zip }}
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" \
+            --title "NetHack ${{ steps.version.outputs.version }} for macOS" \
+            --notes-file .github/release-notes.md

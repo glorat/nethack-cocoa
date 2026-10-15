@@ -18,8 +18,8 @@ open win/cocoa/build/NetHack.app
 Full Xcode must be installed at `/Applications/Xcode.app`, because `ibtool` (XIB compilation) isn't in the Command Line Tools. The Makefile sets `DEVELOPER_DIR` itself when `xcode-select` points at the Command Line Tools. A fresh Xcode also needs `sudo xcodebuild -license accept` and `xcodebuild -runFirstLaunch`. The app is ad-hoc signed; no signing identity is needed.
 
 The Makefile:
-- Its `core` step runs upstream's build from the top of the tree: `sys/unix/setup.sh hints/macOS.500` (once), `make fetch-lua` (once, downloads Lua), then `make all` every time (incremental). That provides `lib/lua/liblua-*.a`, `dat/nhdat`, `makedefs`, `dlb`, `util/tilemap` and `util/tile2bmp`. It also builds upstream's tty `src/nethack`, which the app doesn't use. Its `expr: syntax error` messages are harmless.
-- Compiles core `src/*.c` (the list is `CORE_SRC`), `sys/unix/{unixmain,unixres,unixunix}.c`, `sys/share/posixregex.c`, and the Cocoa `*.c`/`*.m`/`iHack/*.m` (ARC), then links with `lib/lua/liblua-*.a`.
+- Its `core` step runs upstream's build from the top of the tree: `sys/unix/setup.sh hints/macOS.500` (once), `make fetch-lua` (once, downloads Lua), then `make all` every time (incremental). That provides the Lua sources in `lib/lua-*/src`, `dat/nhdat`, `makedefs`, `dlb`, `util/tilemap` and `util/tile2bmp`. It also builds upstream's tty `src/nethack`, which the app doesn't use. Its `expr: syntax error` messages are harmless.
+- Compiles core `src/*.c` (the list is `CORE_SRC`), `sys/unix/{unixmain,unixres,unixunix}.c`, `sys/share/posixregex.c`, the Cocoa `*.c`/`*.m`/`iHack/*.m` (ARC) and Lua (`LUA_SRC`, into `build/liblua.a`, not upstream's liblua, so it gets the same `ARCHFLAGS`), then links.
 - Generates `src/tile.c` via `util/Makefile` and the tile sheet `build/tiles16.bmp` via `tile2bmp`.
 - Bundles the painted sheets `Resources/tiles/tiles64.png` and `tiles128.png`. They are stored with Git LFS (`Resources/tiles/.gitattributes`); without `git lfs` a checkout has pointer files there, and the app rejects them as tile sets. They are NGPL, credited in `Resources/tiles/README` and `Credits.rtf`.
 - Compiles `en.lproj/*.xib`, builds the icon, fills `NetHack-Info.plist` (bundle id `net.hack.cocoa.NetHack5`, version 5.0.0), copies `nhdat`/`license`/`symbols`/`sysconf`/images into `Resources`, and codesigns with `NetHack.entitlements`.
@@ -29,7 +29,9 @@ Gotchas:
 - `NHDEFS` in the Makefile must match the feature flags `util/tilemap` sees, `NOMAIL` especially. A mismatch doesn't fail the build; it misaligns the glyph→tile map and shows the wrong tiles.
 - Include order is `-I. -IiHack -I$(TOP)/include` because the Cocoa `TileSet.h` and core `tileset.h` collide on the case-insensitive filesystem.
 - New core source files in a future upstream merge must be added to `CORE_SRC`.
-- The minimum macOS is 12.0 (`MACOSX_DEPLOYMENT_TARGET`), the lowest Xcode 27's SDK supports. It is exported so upstream's Lua build, whose hints set no target, matches. Make doesn't notice a target change: after changing it, delete `lib/lua/*.a` and `lib/lua-*/src/*.o` so Lua rebuilds, or the link warns.
+- The minimum macOS is 12.0 (`MACOSX_DEPLOYMENT_TARGET`), the lowest Xcode 27's SDK supports. Make doesn't notice a change to it, `ARCHFLAGS` or `VERSION`: run `make -C win/cocoa clean` first.
+- Local builds are for this Mac's architecture. Releases pass `ARCHFLAGS="-arch arm64 -arch x86_64"` for a universal app, plus `VERSION` and `BUILD_NUMBER` for `Info.plist`.
+- `.github/workflows/release.yml` builds the universal app on a GitHub macOS runner. Pushing a `v*` tag (e.g. `v5.0.0`) publishes a GitHub Release with the zipped app and `.github/release-notes.md`; a manual run only uploads the zip as a workflow artifact. The app is ad-hoc signed, not notarized, so users approve it once with Open Anyway.
 - `tile2bmp` rejects long output paths, so the sheet is written in `util/` and then moved.
 
 There are no tests and no linter. `.clang-format` (LLVM-based, 4-space indent, 78 cols, no tabs) and `DEVEL/code_style.txt` describe upstream's C style; the Cocoa Objective-C files use their own older style (tabs). Match the file you're editing.
