@@ -1,11 +1,13 @@
 # Privacy Policy
 
-NetHackCocoa is a Free app written by Bryce Cogswell. This app is provided at no cost and is intended for use as is. 
+NetHack for macOS is a free, open-source app maintained by Kevin Tam ([glorat](https://github.com/glorat)). It is provided at no cost and as is.
 
-The app does not collect or transmit any personal information whatsoever.
+The app does not collect or transmit any personal information. Saved games, scores and settings stay on your Mac.
+
+The only time the app goes online is when you choose to search the NetHack wiki for something on the map. It then opens the wiki in your web browser, and the wiki's own privacy policy applies.
 
 ## Changes to This Privacy Policy
 
-This Privacy Policy may be updated from time to time. Thus, you are advised to review this page periodically for any changes.
+This policy may be updated from time to time. Changes are published in this file in the [project repository](https://github.com/glorat/nethack-cocoa).
 
-This policy is effective as of 2021-03-17
+This policy is effective as of 15 October 2026.
