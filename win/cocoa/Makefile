@@ -1,9 +1,10 @@
 # Builds NetHack.app (Cocoa window port) against the NetHack 5.0 core.
 # Runs upstream's setup.sh, fetch-lua and top-level build as needed for
-# liblua, nhdat and the util tools, then builds the app.
+# the Lua sources, nhdat and the util tools, then builds the app.
 #
 #   make -C win/cocoa          # -> win/cocoa/build/NetHack.app
 #   make -C win/cocoa run
+#   make -C win/cocoa ARCHFLAGS="-arch arm64 -arch x86_64" VERSION=5.0.1   # release
 
 TOP      := ../..
 BUILD    := build
@@ -15,8 +16,6 @@ CC       := xcrun clang
 IBTOOL   := xcrun ibtool
 ICONUTIL := iconutil
 
-# Exported so upstream's liblua build (its hints set no target) matches the
-# app; an existing liblua must be rebuilt after changing this.
 export MACOSX_DEPLOYMENT_TARGET := 12.0
 
 # ibtool is only in full Xcode, not the Command Line Tools.
@@ -27,6 +26,8 @@ endif
 endif
 
 ARCHFLAGS ?= -arch $(shell uname -m)
+VERSION  ?= 5.0.0
+BUILD_NUMBER ?= 1
 
 # Must stay in step with the feature flags util/tilemap was built with
 # (NOMAIL in particular), or tile indices in src/tile.c will be off.
@@ -68,7 +69,12 @@ OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(CORE_SRC))) \
 	$(addprefix $(OBJDIR)/cocoa_,$(notdir $(COCOA_M:.m=.o)))
 
 LUA_VERSION := $(shell sed -n 's/^LUA_VERSION *= *//p' $(TOP)/sys/unix/Makefile.top)
-LUALIB := $(TOP)/lib/lua/liblua-$(LUA_VERSION).a
+LUADIR := $(TOP)/lib/lua-$(LUA_VERSION)/src
+# Built here rather than taken from upstream's liblua so it gets ARCHFLAGS.
+LUA_SRC := lapi lauxlib lbaselib lcode lcorolib lctype ldblib ldebug ldo ldump \
+	lfunc lgc linit liolib llex lmathlib lmem loadlib lobject lopcodes loslib \
+	lparser lstate lstring lstrlib ltable ltablib ltm lundump lutf8lib lvm lzio
+LUALIB := $(BUILD)/liblua.a
 
 XIBS := $(wildcard en.lproj/*.xib)
 NIBS := $(patsubst en.lproj/%.xib,$(CONTENTS)/Resources/en.lproj/%.nib,$(XIBS))
@@ -89,7 +95,15 @@ core:
 	@test -f $(TOP)/lib/lua-$(LUA_VERSION)/src/lua.h || $(MAKE) -C $(TOP) fetch-lua
 	$(MAKE) -C $(TOP) all
 
-$(LUALIB) $(TOP)/dat/nhdat $(TOP)/dat/symbols: | core ;
+$(TOP)/dat/nhdat $(TOP)/dat/symbols: | core ;
+
+$(OBJDIR)/lua/%.o: $(LUADIR)/%.c | core
+	@mkdir -p $(@D)
+	$(CC) -O2 $(ARCHFLAGS) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) \
+		-DLUA_USE_MACOSX -w -c $< -o $@
+
+$(LUALIB): $(addprefix $(OBJDIR)/lua/,$(addsuffix .o,$(LUA_SRC)))
+	libtool -static -o $@ $^
 
 vpath %.c $(TOP)/src $(TOP)/sys/share $(TOP)/sys/unix
 
@@ -133,8 +147,8 @@ $(CONTENTS)/Info.plist: NetHack-Info.plist
 	    -e 's/\$$(PRODUCT_BUNDLE_IDENTIFIER)/net.hack.cocoa.NetHack5/' \
 	    -e 's/\$${PRODUCT_NAME}/NetHack/' \
 	    -e 's/\$$(PRODUCT_BUNDLE_PACKAGE_TYPE)/APPL/' \
-	    -e 's/\$$(MARKETING_VERSION)/5.0.0/' \
-	    -e 's/\$$(CURRENT_PROJECT_VERSION)/1/' \
+	    -e 's/\$$(MARKETING_VERSION)/$(VERSION)/' \
+	    -e 's/\$$(CURRENT_PROJECT_VERSION)/$(BUILD_NUMBER)/' \
 	    -e 's/\$${MACOSX_DEPLOYMENT_TARGET}/$(MACOSX_DEPLOYMENT_TARGET)/' \
 	    $< > $@
 
