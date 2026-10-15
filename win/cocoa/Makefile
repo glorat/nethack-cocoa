@@ -144,7 +144,7 @@ $(CONTENTS)/Resources/en.lproj/%.nib: en.lproj/%.xib
 $(CONTENTS)/Info.plist: NetHack-Info.plist
 	@mkdir -p $(@D)
 	sed -e 's/\$${EXECUTABLE_NAME}/NetHack/' \
-	    -e 's/\$$(PRODUCT_BUNDLE_IDENTIFIER)/net.hack.cocoa.NetHack5/' \
+	    -e 's/\$$(PRODUCT_BUNDLE_IDENTIFIER)/io.github.glorat.nethack/' \
 	    -e 's/\$${PRODUCT_NAME}/NetHack/' \
 	    -e 's/\$$(PRODUCT_BUNDLE_PACKAGE_TYPE)/APPL/' \
 	    -e 's/\$$(MARKETING_VERSION)/$(VERSION)/' \

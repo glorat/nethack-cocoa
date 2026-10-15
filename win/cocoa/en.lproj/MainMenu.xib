@@ -36,7 +36,7 @@
                 <outlet property="yesNoWindow" destination="885" id="954"/>
             </connections>
         </customObject>
-        <window title="NetHackCocoa" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" frameAutosaveName="MainWindowPosition" animationBehavior="default" id="371" userLabel="Main Window">
+        <window title="NetHack" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" frameAutosaveName="MainWindowPosition" animationBehavior="default" id="371" userLabel="Main Window">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="335" y="374" width="637" height="376"/>
@@ -725,10 +725,10 @@
         </window>
         <menu title="AMainMenu" systemMenu="main" id="29">
             <items>
-                <menuItem title="NetHackCocoa" id="56">
-                    <menu key="submenu" title="NetHackCocoa" systemMenu="apple" id="57">
+                <menuItem title="NetHack" id="56">
+                    <menu key="submenu" title="NetHack" systemMenu="apple" id="57">
                         <items>
-                            <menuItem title="About NetHackCocoa" id="58">
+                            <menuItem title="About NetHack" id="58">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="orderFrontStandardAboutPanel:" target="-2" id="142"/>
@@ -747,7 +747,7 @@
                             <menuItem isSeparatorItem="YES" id="144">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="Hide NetHackCocoa" keyEquivalent="h" id="134">
+                            <menuItem title="Hide NetHack" keyEquivalent="h" id="134">
                                 <connections>
                                     <action selector="hide:" target="-1" id="367"/>
                                 </connections>
@@ -766,7 +766,7 @@
                             <menuItem isSeparatorItem="YES" id="149">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="Quit NetHackCocoa" keyEquivalent="q" id="136">
+                            <menuItem title="Quit NetHack" keyEquivalent="q" id="136">
                                 <connections>
                                     <action selector="terminateApplication:" target="943" id="955"/>
                                 </connections>

@@ -22,7 +22,7 @@ The Makefile:
 - Compiles core `src/*.c` (the list is `CORE_SRC`), `sys/unix/{unixmain,unixres,unixunix}.c`, `sys/share/posixregex.c`, the Cocoa `*.c`/`*.m`/`iHack/*.m` (ARC) and Lua (`LUA_SRC`, into `build/liblua.a`, not upstream's liblua, so it gets the same `ARCHFLAGS`), then links.
 - Generates `src/tile.c` via `util/Makefile` and the tile sheet `build/tiles16.bmp` via `tile2bmp`.
 - Bundles the painted sheets `Resources/tiles/tiles64.png` and `tiles128.png`. They are stored with Git LFS (`Resources/tiles/.gitattributes`); without `git lfs` a checkout has pointer files there, and the app rejects them as tile sets. They are NGPL, credited in `Resources/tiles/README` and `Credits.rtf`.
-- Compiles `en.lproj/*.xib`, builds the icon, fills `NetHack-Info.plist` (bundle id `net.hack.cocoa.NetHack5`, version 5.0.0), copies `nhdat`/`license`/`symbols`/`sysconf`/images into `Resources`, and codesigns with `NetHack.entitlements`.
+- Compiles `en.lproj/*.xib`, builds the icon, fills `NetHack-Info.plist` (bundle id `io.github.glorat.nethack`, version 5.0.0), copies `nhdat`/`license`/`symbols`/`sysconf`/images into `Resources`, and codesigns with `NetHack.entitlements`.
 - `win/cocoa/Makefile` matches the top-level `.gitignore`'s `Makefile` rule; it is tracked, so new copies need `git add -f`.
 
 Gotchas:
@@ -65,7 +65,7 @@ All under `COCOA_GRAPHICS`. Grep for it when the core behaves differently under 
 
 `DEFAULT_WINDOW_SYS "cocoa"`, `NOCWD_ASSUMPTIONS` (needed so the file prefixes are honoured), `SYSCF`, `DLB` and `NOMAIL` come from `NHDEFS` in the Makefile, not from `config.h`.
 
-`win/cocoa/cocoa_unix.c` contains only `set_fqn_prefixes()`. Upstream's `sys/unix/unixunix.c` handles locking and files. Writable files go in `$NETHACKDIR`/`$HACKDIR`, falling back to `~/nethackdir` (inside the sandbox container, `~/Library/Containers/net.hack.cocoa.NetHack5/Data/nethackdir`), where it creates `perm`, `record`, `logfile`, `xlogfile` and `save/`. Read-only data (`nhdat`, `symbols`, `sysconf`, tiles) is read from the bundle's resource directory, which is the working directory. `win/cocoa/sysconf` is the bundled SYSCF.
+`win/cocoa/cocoa_unix.c` contains only `set_fqn_prefixes()`. Upstream's `sys/unix/unixunix.c` handles locking and files. Writable files go in `$NETHACKDIR`/`$HACKDIR`, falling back to `~/nethackdir` (inside the sandbox container, `~/Library/Containers/io.github.glorat.nethack/Data/nethackdir`), where it creates `perm`, `record`, `logfile`, `xlogfile` and `save/`. Read-only data (`nhdat`, `symbols`, `sysconf`, tiles) is read from the bundle's resource directory, which is the working directory. `win/cocoa/sysconf` is the bundled SYSCF.
 
 The core reports inventory changes only inside the game loop, so `cocoa_nh_poskey` calls `cocoa_update_inventory` once when `program_state.in_moveloop` first becomes true; otherwise the equipment view is empty at the start of a game.
 
