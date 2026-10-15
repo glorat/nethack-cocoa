@@ -63,6 +63,12 @@
 			if ( extcmdlist[i].ef_txt[0] == '?' )
 				// skip help command
 				continue;
+			// as the core's own # prompt: commands with a key of their own are left out
+			if ( !(extcmdlist[i].flags & AUTOCOMPLETE)
+				|| (extcmdlist[i].flags & (MOVEMENTCMD | INTERNALCMD | CMD_NOT_AVAILABLE)) )
+				continue;
+			if ( (extcmdlist[i].flags & WIZMODECMD) && !wizard )
+				continue;
 			
 			NSRect rect = NSMakeRect(itemIndent, yPos, viewRect.size.width, 10 );
 			NSButton * button = [[NSButton alloc] initWithFrame:rect];	

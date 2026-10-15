@@ -7,6 +7,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - Monsters and objects on lit room floor are drawn over the floor instead of on black.
 - The click that brings the window to the front no longer also moves your character.
 - Clicking a distant square you haven't explored no longer starts travel there. Position prompts such as `;` still accept those squares.
+- The extended command list (`#`) shows only the 31 commands NetHack offers there, such as `#pray`, `#offer` and `#loot`, instead of all 170. Commands with their own key are left out, and wizard-mode commands only appear in wizard mode.
 - Stairs, ladders, drawbridges and open doors are redrawn closer to the classic tiles. Stairs and ladders have an arrow for the direction, and doors sit flush in the wall. A trapped door is the ordinary closed door with a red rune.
 - Engravings look like faint scratches on the floor instead of a stone slab.
 - Walls fill their whole square, so there's no dark gap between a wall and the room beside it.
