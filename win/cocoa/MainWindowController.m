@@ -264,6 +264,23 @@ static MainWindowController* instance;
 										   [NhTextInputEvent eventWithText:[sender identifier]] ]];
 }
 
+// at any other prompt a click would feed '#' to it
+- (BOOL)validateMenuItem:(NSMenuItem *)item
+{
+	if ( item.action == @selector(performMenuAction:) )
+		return program_state.input_state == commandInp;
+	return YES;
+}
+
+- (void)updateWizardMenu
+{
+	if ( ![NSThread isMainThread] ) {
+		[self performSelectorOnMainThread:@selector(updateWizardMenu) withObject:nil waitUntilDone:NO];
+		return;
+	}
+	[NSApp.mainMenu itemWithTitle:@"Wizard Mode"].hidden = !wizard;
+}
+
 - (IBAction)enableAsciiMode:(id)sender
 {
 	NSMenuItem * menuItem = sender;

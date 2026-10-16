@@ -38,6 +38,14 @@ static NSString * Title(NSXMLElement * item)
 	XCTAssertGreaterThan(GameMenuItems().count, 80u);
 }
 
+-(void)testWizardModeStartsHidden
+{
+	NSString * path = [@COCOA_SOURCE_DIR stringByAppendingPathComponent:@"en.lproj/MainMenu.xib"];
+	NSXMLDocument * xib = [[NSXMLDocument alloc] initWithContentsOfURL:[NSURL fileURLWithPath:path] options:0 error:NULL];
+	NSXMLElement * wizard = [[xib nodesForXPath:@"//menuItem[@title='Wizard Mode']" error:NULL] firstObject];
+	XCTAssertEqualObjects([wizard attributeForName:@"hidden"].stringValue, @"YES");
+}
+
 -(void)testEveryGameMenuItemNamesACommand
 {
 	for ( NSXMLElement * item in GameMenuItems() )

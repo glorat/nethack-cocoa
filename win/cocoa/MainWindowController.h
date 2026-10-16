@@ -87,6 +87,7 @@
 
 // window API
 - (void)showYnQuestion:(NhYnQuestion *)q;
+- (void)updateWizardMenu;
 - (void)refreshMessages;
 // gets called when core waits for input
 - (void)refreshAllViews;

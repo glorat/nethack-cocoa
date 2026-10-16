@@ -526,6 +526,7 @@ int cocoa_nh_poskey(coordxy *x, coordxy *y, int *mod)
 	if (!s_inventoryShown && program_state.in_moveloop) {
 		s_inventoryShown = YES;
 		cocoa_update_inventory(0);
+		[[MainWindowController instance] updateWizardMenu];
 	}
 	[[MainWindowController instance] refreshAllViews];
 	NhEvent *e = [[NhEventQueue instance] nextEvent];
