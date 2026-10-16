@@ -9,8 +9,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - Clicking a distant square you haven't explored no longer starts travel there. Position prompts such as `;` still accept those squares.
 - Menus are redrawn. Lists you choose from, such as inventory, pickup and drop, show each item's picture and letter in a scrolling list: click a row or type its letter, type a number first to take only that many, or move with the arrow keys and press space. Read-only menus such as `^X` attributes and the dungeon overview are plain text you can select and copy. Lines are no longer squeezed into a narrow column.
 - The extended command list (`#`) shows only the 31 commands NetHack offers there, such as `#pray`, `#offer` and `#loot`, instead of all 170. Commands with their own key are left out, and wizard-mode commands only appear in wizard mode.
-- Stairs, ladders, drawbridges and open doors are redrawn closer to the classic tiles. Stairs and ladders have an arrow for the direction, and doors sit flush in the wall. A trapped door is the ordinary closed door with a red rune.
-- Engravings look like faint scratches on the floor instead of a stone slab.
+- Many painted tiles are redrawn closer to the classic tiles, including sizes, engravings and unidentified items.
 - Walls fill their whole square, so there's no dark gap between a wall and the room beside it.
 - The app no longer freezes when you hover over the map after a game ends.
 - Closing a message window with Return, space or Esc no longer also answers the next question. Before, closing the window before the tutorial question this way skipped the question and left a second copy of it on screen.
