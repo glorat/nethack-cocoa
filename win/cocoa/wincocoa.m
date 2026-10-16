@@ -254,12 +254,13 @@ void cocoa_askname(void)
 {
 	//NSLog(@"askname");
 	char typed[BUFSZ];
-	for ( int tries = 0; tries < 10; ++tries ) {
-		cocoa_getlin(tries ? "Enter a name for your character. Who are you?" : "Who are you?", typed);
-		if ( NhPlayerName(typed, svp.plname, sizeof svp.plname) )
-			return;
-	}
-	nh_terminate(EXIT_SUCCESS);
+	do {
+		cocoa_getlin("Who are you?", typed);
+		if ( typed[0] == '\033' ) {
+			cocoa_exit_nhwindows("Until next time then...");
+			nh_terminate(EXIT_SUCCESS);
+		}
+	} while ( !NhPlayerName(typed, svp.plname, sizeof svp.plname) );
 }
 
 void cocoa_get_nh_event()

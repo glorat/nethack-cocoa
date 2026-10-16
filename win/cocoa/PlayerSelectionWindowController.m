@@ -29,6 +29,7 @@
 
 #import "PlayerSelectionWindowController.h"
 #import "TileSet.h"
+#import "PlayerName.h"
 
 
 @implementation PlayerSelectionWindowController
@@ -347,7 +348,11 @@
 
 -(void)doAccept:(id)sender
 {
-	strcpy( svp.plname, [[name stringValue] UTF8String] );
+	const char * typed = [[name stringValue] UTF8String];
+	char picked[sizeof svp.plname];
+	// an unchanged name may come from options, and its save is under that spelling
+	if ( strcmp(typed, svp.plname) && NhPlayerName(typed, picked, sizeof picked) )
+		strcpy(svp.plname, picked);
 	[[self window] close];
 }
 
