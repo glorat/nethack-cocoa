@@ -116,9 +116,45 @@ static NSString * SortKey( NSString * title )
 
 
 @interface MenuTableView : NSTableView
+@property (nonatomic, assign) BOOL hoverSelects;
 @end
 
 @implementation MenuTableView
+{
+	NSTrackingArea * hoverArea;
+}
+
+- (void)updateTrackingAreas
+{
+	[super updateTrackingAreas];
+	if ( self.hoverSelects && hoverArea == nil ) {
+		hoverArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
+												 options:NSTrackingMouseMoved | NSTrackingMouseEnteredAndExited | NSTrackingActiveAlways | NSTrackingInVisibleRect
+												   owner:self
+												userInfo:nil];
+		[self addTrackingArea:hoverArea];
+	}
+}
+
+- (void)mouseMoved:(NSEvent *)event
+{
+	if ( !self.hoverSelects ) {
+		[super mouseMoved:event];
+		return;
+	}
+	NSInteger r = [self rowAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
+	if ( r >= 0 && r != self.selectedRow && [(id<NSTableViewDelegate>)self.delegate tableView:self shouldSelectRow:r] )
+		[self selectRowIndexes:[NSIndexSet indexSetWithIndex:r] byExtendingSelection:NO];
+}
+
+- (void)mouseExited:(NSEvent *)event
+{
+	if ( self.hoverSelects )
+		[self deselectAll:nil];
+	else
+		[super mouseExited:event];
+}
+
 // let clicks on a row's checkbox reach it instead of starting a selection
 - (BOOL)validateProposedFirstResponder:(NSResponder *)responder forEvent:(NSEvent *)event
 {
@@ -345,8 +381,133 @@ static NSString * SortKey( NSString * title )
 	return button;
 }
 
+// a short pick-one menu reads better as a question with an answer button per item
+-(BOOL)isQuestion
+{
+	if ( how != PICK_ONE || hasTiles )
+		return NO;
+	NSUInteger items = 0;
+	for ( MenuRow * row in rows ) {
+		if ( row.item ) {
+			if ( ++items > 4 || row.fields.count > 1 || row.fields[0].length > 40 )
+				return NO;
+		} else if ( row.heading ) {
+			return NO;
+		}
+	}
+	return items >= 2;
+}
+
+-(void)placeWindow
+{
+	NSRect visible = (NSApp.mainWindow.screen ?: NSScreen.mainScreen).visibleFrame;
+	NSRect main = NSApp.mainWindow ? NSApp.mainWindow.frame : visible;
+	NSRect frame = self.window.frame;
+	frame.origin.x = round(NSMidX(main) - frame.size.width / 2);
+	frame.origin.y = round(MIN(NSMaxY(main) - 60, NSMaxY(visible)) - frame.size.height);
+	frame.origin.x = MAX(NSMinX(visible), MIN(frame.origin.x, NSMaxX(visible) - frame.size.width));
+	frame.origin.y = MAX(NSMinY(visible), frame.origin.y);
+	[self.window setFrame:frame display:NO];
+}
+
+-(NSButton *)answerButtonForRow:(NSInteger)r
+{
+	MenuRow * row = rows[r];
+	NSButton * button = [self buttonWithTitle:@"" action:@selector(answerClicked:)];
+	button.controlSize = NSControlSizeLarge;
+	button.alignment = NSTextAlignmentLeft;
+	button.tag = r;
+	NSMutableParagraphStyle * style = [[NSMutableParagraphStyle alloc] init];
+	style.alignment = NSTextAlignmentLeft;
+	NSMutableAttributedString * title = [[NSMutableAttributedString alloc] init];
+	if ( row.item.inventoryLetter ) {
+		NSString * letter = [NSString stringWithFormat:@"%c   ", row.item.inventoryLetter];
+		[title appendAttributedString:[[NSAttributedString alloc] initWithString:letter attributes:@{
+			NSFontAttributeName : [NSFont monospacedSystemFontOfSize:bodyFont.pointSize weight:NSFontWeightMedium],
+			NSForegroundColorAttributeName : [NSColor secondaryLabelColor] }]];
+	}
+	[title appendAttributedString:[[NSAttributedString alloc] initWithString:row.fields[0] attributes:@{
+		NSFontAttributeName : bodyFont,
+		NSForegroundColorAttributeName : [NSColor labelColor] }]];
+	[title addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, title.length)];
+	button.attributedTitle = title;
+	if ( [checked containsObject:row.item] )
+		button.keyEquivalent = @"\r";
+	return button;
+}
+
+-(void)buildQuestionContents
+{
+	const CGFloat width = 380;
+	const CGFloat inner = width - 2 * kMargin;
+	self.window.title = @"";
+	self.window.styleMask &= ~NSWindowStyleMaskResizable;
+
+	NSStackView * stack = [[NSStackView alloc] init];
+	stack.orientation = NSUserInterfaceLayoutOrientationVertical;
+	stack.alignment = NSLayoutAttributeLeading;
+	stack.spacing = 8;
+	stack.edgeInsets = NSEdgeInsetsMake(20, kMargin, 16, kMargin);
+	stack.translatesAutoresizingMaskIntoConstraints = NO;
+	NSMutableArray * constraints = [NSMutableArray array];
+
+	if ( menuParams.prompt.length ) {
+		NSTextField * prompt = [NSTextField wrappingLabelWithString:menuParams.prompt];
+		prompt.font = [NSFont boldSystemFontOfSize:15];
+		prompt.preferredMaxLayoutWidth = inner;
+		[stack addArrangedSubview:prompt];
+		[stack setCustomSpacing:14 afterView:prompt];
+	}
+	for ( NSInteger r = 0; r < (NSInteger)rows.count; ++r ) {
+		MenuRow * row = rows[r];
+		NSView * view;
+		if ( row.item ) {
+			view = [self answerButtonForRow:r];
+		} else {
+			NSString * text = [row.fields componentsJoinedByString:@" "];
+			if ( text.length == 0 )
+				continue;
+			NSTextField * label = [NSTextField wrappingLabelWithString:text];
+			label.font = [NSFont systemFontOfSize:12];
+			label.textColor = [NSColor secondaryLabelColor];
+			label.preferredMaxLayoutWidth = inner;
+			view = label;
+		}
+		[stack addArrangedSubview:view];
+		[constraints addObject:[view.widthAnchor constraintEqualToConstant:inner]];
+	}
+
+	NSButton * cancel = [self buttonWithTitle:@"Cancel" action:@selector(doCancel:)];
+	NSStackView * bar = [NSStackView stackViewWithViews:@[]];
+	[bar addView:cancel inGravity:NSStackViewGravityTrailing];
+	[stack addArrangedSubview:bar];
+	[stack setCustomSpacing:14 afterView:stack.arrangedSubviews[stack.arrangedSubviews.count - 2]];
+	[constraints addObject:[bar.widthAnchor constraintEqualToConstant:inner]];
+
+	NSView * content = self.window.contentView;
+	[content addSubview:stack];
+	[constraints addObjectsFromArray:@[
+		[stack.topAnchor constraintEqualToAnchor:content.topAnchor],
+		[stack.leadingAnchor constraintEqualToAnchor:content.leadingAnchor],
+		[stack.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
+		[stack.bottomAnchor constraintEqualToAnchor:content.bottomAnchor],
+	]];
+	[NSLayoutConstraint activateConstraints:constraints];
+	[self.window setContentSize:stack.fittingSize];
+	[self placeWindow];
+}
+
+-(void)answerClicked:(NSButton *)sender
+{
+	[self chooseItem:rows[sender.tag].item];
+}
+
 -(void)buildContents
 {
+	if ( [self isQuestion] ) {
+		[self buildQuestionContents];
+		return;
+	}
 	NSView * content = self.window.contentView;
 	NSScrollView * scrollView = [[NSScrollView alloc] init];
 	scrollView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -377,7 +538,9 @@ static NSString * SortKey( NSString * title )
 		scrollView.documentView = textView;
 	} else {
 		CGFloat rowHeight = hasTiles ? kTileSize + 6 : 22;
-		tableView = [[MenuTableView alloc] init];
+		MenuTableView * menuTable = [[MenuTableView alloc] init];
+		menuTable.hoverSelects = how == PICK_ONE;
+		tableView = menuTable;
 		NSTableColumn * column = [[NSTableColumn alloc] initWithIdentifier:@"menu"];
 		column.resizingMask = NSTableColumnAutoresizingMask;
 		[tableView addTableColumn:column];
@@ -400,13 +563,16 @@ static NSString * SortKey( NSString * title )
 	}
 
 	// buttons
-	NSButton * accept = [self buttonWithTitle:(how == PICK_NONE ? @"Close" : @"OK") action:@selector(doAccept:)];
-	accept.keyEquivalent = @"\r";
-	NSStackView * right = [NSStackView stackViewWithViews:@[ accept ]];
-	if ( how != PICK_NONE ) {
-		NSButton * cancel = [self buttonWithTitle:@"Cancel" action:@selector(doCancel:)];
-		[right insertView:cancel atIndex:0 inGravity:NSStackViewGravityLeading];
+	// a pick-one menu is answered by clicking a row, so it has no OK
+	NSMutableArray * buttons = [NSMutableArray array];
+	if ( how != PICK_NONE )
+		[buttons addObject:[self buttonWithTitle:@"Cancel" action:@selector(doCancel:)]];
+	if ( how != PICK_ONE ) {
+		NSButton * accept = [self buttonWithTitle:(how == PICK_NONE ? @"Close" : @"OK") action:@selector(doAccept:)];
+		accept.keyEquivalent = @"\r";
+		[buttons addObject:accept];
 	}
+	NSStackView * right = [NSStackView stackViewWithViews:buttons];
 	right.translatesAutoresizingMaskIntoConstraints = NO;
 	[content addSubview:right];
 
@@ -439,13 +605,7 @@ static NSString * SortKey( NSString * title )
 	CGFloat height = MIN(MAX(documentHeight, 60) + kButtonBar, visible.size.height * 0.85);
 	[self.window setContentSize:NSMakeSize(width, height)];
 	self.window.contentMinSize = NSMakeSize(300, 160);
-	NSRect main = NSApp.mainWindow ? NSApp.mainWindow.frame : visible;
-	NSRect frame = self.window.frame;
-	frame.origin.x = round(NSMidX(main) - frame.size.width / 2);
-	frame.origin.y = round(MIN(NSMaxY(main) - 60, NSMaxY(visible)) - frame.size.height);
-	frame.origin.x = MAX(NSMinX(visible), MIN(frame.origin.x, NSMaxX(visible) - frame.size.width));
-	frame.origin.y = MAX(NSMinY(visible), frame.origin.y);
-	[self.window setFrame:frame display:NO];
+	[self placeWindow];
 
 	if ( tableView ) {
 		[tableView sizeLastColumnToFit];
@@ -651,18 +811,18 @@ static NSString * SortKey( NSString * title )
 		[self doCancel:nil];
 		return YES;
 	}
-	if ( c == '\r' || c == 3 ) {
-		if ( how == PICK_ONE && highlightedItem )
-			[self chooseItem:highlightedItem];
-		else
-			[self doAccept:nil];
-		return YES;
-	}
-	if ( c == ' ' ) {
-		if ( how == PICK_ANY && highlightedItem )
+	if ( c == '\r' || c == 3 || c == ' ' ) {
+		if ( how == PICK_ONE ) {
+			// with nothing chosen, accepting would answer the question with nothing
+			if ( highlightedItem )
+				[self chooseItem:highlightedItem];
+			else if ( checked.count )
+				[self doAccept:nil];
+		} else if ( c == ' ' && how == PICK_ANY && highlightedItem ) {
 			[self toggleItem:highlightedItem];
-		else
+		} else {
 			[self doAccept:nil];
+		}
 		return YES;
 	}
 	if ( how == PICK_NONE || c > 127 )
