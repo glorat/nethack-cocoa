@@ -33,7 +33,6 @@
 @class NhMenuWindow;
 @class MenuWindowController;
 @class MessageWindowController;
-@class InputWindowController;
 @class PlayerSelectionWindowController;
 @class NotesWindowController;
 @class StatsView;
@@ -59,7 +58,6 @@
 	IBOutlet StatsView						*	statsView;
 	IBOutlet EquipmentView					*	equipmentView;
 	
-	IBOutlet InputWindowController			*	inputWindow;
 	IBOutlet PlayerSelectionWindowController*	showPlayerSelection;
 	IBOutlet NotesWindowController			*	notesWindow;
 }
@@ -95,7 +93,7 @@
 - (void)showMenuWindow:(NhMenuWindow *)w;
 - (void)clipAroundX:(int)x y:(int)y;
 - (void)updateInventory;
-- (void)getLine;
+- (void)getLineWithPrompt:(NSString *)prompt;
 - (void)displayMessageWindow:(NSString *)text;
 - (void)showExtendedCommands;
 - (void)showPlayerSelection;

@@ -615,16 +615,20 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 void cocoa_getlin(const char *prompt, char *line)
 {
 	//NSLog(@"getlin %s", prompt);
-	cocoa_putstr(WIN_MESSAGE, 0, prompt);
 	[[MainWindowController instance] refreshAllViews];
-	[[MainWindowController instance] getLine];
-	NhTextInputEvent *e = (NhTextInputEvent *) [[NhEventQueue instance] nextEvent];
-	if ( [e class] == [NhTextInputEvent class]  &&  e.text ) {
-		[e.text getCString:line maxLength:BUFSZ encoding:NSASCIIStringEncoding];
-	} else {
-		// cancel
-		strcpy(line, "\033\000");
-	}
+	[[MainWindowController instance] getLineWithPrompt:[NSString stringWithCString:prompt encoding:NSISOLatin1StringEncoding]];
+	// keys typed before the window opened can't be the answer
+	NhEvent * e;
+	do {
+		e = [[NhEventQueue instance] nextEvent];
+	} while ( ![e isKindOfClass:[NhTextInputEvent class]] );
+	NSData * text = [((NhTextInputEvent *)e).text dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
+	size_t n = MIN(text.length, BUFSZ - 1);
+	memcpy(line, text.bytes, n);
+	line[n] = '\0';
+	char logged[BUFSZ * 2];
+	snprintf(logged, sizeof logged, "%s %s", prompt, line[0] == '\033' ? "" : line);
+	cocoa_putstr(WIN_MESSAGE, 0, logged);
 }
 
 int cocoa_get_ext_cmd()

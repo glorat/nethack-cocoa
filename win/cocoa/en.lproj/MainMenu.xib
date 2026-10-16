@@ -23,7 +23,6 @@
             <connections>
                 <outlet property="asciiModeMenuItem" destination="1560" id="1562"/>
                 <outlet property="equipmentView" destination="1656" id="1672"/>
-                <outlet property="inputWindow" destination="906" id="946"/>
                 <outlet property="mainView" destination="566" id="948"/>
                 <outlet property="messagesView" destination="1680" id="1688"/>
                 <outlet property="notesWindow" destination="1229" id="1230"/>
@@ -1545,89 +1544,6 @@
             </items>
             <point key="canvasLocation" x="-260" y="408"/>
         </menu>
-        <customObject id="906" customClass="InputWindowController">
-            <connections>
-                <outlet property="inputField" destination="907" id="914"/>
-                <outlet property="promptField" destination="909" id="1206"/>
-                <outlet property="window" destination="904" id="915"/>
-            </connections>
-        </customObject>
-        <window allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="InputWindowPosition" animationBehavior="default" id="904" userLabel="Input Window" customClass="NSPanel">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" resizable="YES" utility="YES"/>
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="162" y="364" width="363" height="115"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
-            <value key="minSize" type="size" width="363" height="115"/>
-            <value key="maxSize" type="size" width="1000" height="115"/>
-            <view key="contentView" id="905">
-                <rect key="frame" x="0.0" y="0.0" width="363" height="115"/>
-                <autoresizingMask key="autoresizingMask"/>
-                <subviews>
-                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="907">
-                        <rect key="frame" x="19" y="47" width="324" height="21"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="908">
-                            <font key="font" metaFont="system"/>
-                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
-                    <textField focusRingType="none" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="909">
-                        <rect key="frame" x="17" y="76" width="329" height="16"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Response:" id="910">
-                            <font key="font" metaFont="system"/>
-                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="911">
-                        <rect key="frame" x="273" y="12" width="77" height="32"/>
-                        <buttonCell key="cell" type="push" title="Accept" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="912">
-                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
-                            <string key="keyEquivalent" base64-UTF8="YES">
-DQ
-</string>
-                        </buttonCell>
-                        <connections>
-                            <action selector="doAccept:" target="906" id="1106"/>
-                        </connections>
-                    </button>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1104">
-                        <rect key="frame" x="186" y="12" width="89" height="32"/>
-                        <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="1105">
-                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
-                            <string key="keyEquivalent" base64-UTF8="YES">
-Gw
-</string>
-                        </buttonCell>
-                        <connections>
-                            <action selector="doCancel:" target="906" id="1110"/>
-                        </connections>
-                    </button>
-                </subviews>
-                <constraints>
-                    <constraint firstItem="909" firstAttribute="leading" secondItem="907" secondAttribute="leading" id="4Fu-E6-pLQ"/>
-                    <constraint firstAttribute="trailing" secondItem="911" secondAttribute="trailing" constant="20" symbolic="YES" id="Gwr-86-sV0"/>
-                    <constraint firstItem="1104" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="905" secondAttribute="leading" constant="20" id="LFq-jo-Vf5"/>
-                    <constraint firstItem="907" firstAttribute="top" secondItem="909" secondAttribute="bottom" constant="8" symbolic="YES" id="PWr-db-rdr"/>
-                    <constraint firstAttribute="trailing" secondItem="909" secondAttribute="trailing" constant="19" id="SbU-ln-sZs"/>
-                    <constraint firstAttribute="trailing" secondItem="907" secondAttribute="trailing" constant="20" symbolic="YES" id="exK-k7-iZo"/>
-                    <constraint firstAttribute="bottom" secondItem="911" secondAttribute="bottom" constant="19" id="oMo-B2-BVC"/>
-                    <constraint firstItem="911" firstAttribute="leading" secondItem="1104" secondAttribute="trailing" constant="12" symbolic="YES" id="qmy-BH-WeM"/>
-                    <constraint firstItem="909" firstAttribute="top" secondItem="905" secondAttribute="top" constant="23" id="srj-XD-sJ4"/>
-                    <constraint firstItem="1104" firstAttribute="top" secondItem="907" secondAttribute="bottom" constant="8" symbolic="YES" id="tSK-Dg-Bau"/>
-                    <constraint firstItem="909" firstAttribute="leading" secondItem="905" secondAttribute="leading" constant="19" id="uKl-0h-TSf"/>
-                    <constraint firstItem="1104" firstAttribute="width" secondItem="911" secondAttribute="width" multiplier="1.1831" id="vlH-ab-pXE"/>
-                    <constraint firstItem="911" firstAttribute="top" secondItem="907" secondAttribute="bottom" constant="8" symbolic="YES" id="yyM-zD-NQX"/>
-                </constraints>
-            </view>
-            <connections>
-                <outlet property="delegate" destination="906" id="918"/>
-                <outlet property="initialFirstResponder" destination="907" id="917"/>
-            </connections>
-            <point key="canvasLocation" x="-775" y="-704"/>
-        </window>
         <customObject id="1165" customClass="PlayerSelectionWindowController">
             <connections>
                 <outlet property="alignChaotic" destination="1158" id="1185"/>

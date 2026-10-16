@@ -650,13 +650,13 @@ static MainWindowController* instance;
 	}
 }
 
-- (void)getLine {
+- (void)getLineWithPrompt:(NSString *)prompt {
 	if (![NSThread isMainThread]) {
-		[self performSelectorOnMainThread:@selector(getLine) withObject:nil waitUntilDone:NO];
+		[self performSelectorOnMainThread:@selector(getLineWithPrompt:) withObject:prompt waitUntilDone:NO];
 	} else {
-		NSAttributedString * attrPrompt = [[[NhWindow messageWindow] messages] lastObject];
-		NSString * prompt = [attrPrompt string];
-		[inputWindow runModalWithPrompt:prompt];
+		[InputWindowController askWithPrompt:prompt parent:self.window answer:^(NSString * text) {
+			[[NhEventQueue instance] addEvent:[NhTextInputEvent eventWithText:text]];
+		}];
 	}
 }
 

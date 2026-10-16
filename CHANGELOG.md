@@ -10,6 +10,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - Menus are redrawn. Lists you choose from, such as inventory, pickup and drop, show each item's picture and letter in a scrolling list: click a row or type its letter, type a number first to take only that many, or move with the arrow keys and press space. Read-only menus such as `^X` attributes and the dungeon overview are plain text you can select and copy. Lines are no longer squeezed into a narrow column.
 - The extended command prompt (`#`) works as in the terminal: type a command's name and press Return.
 - Menu bar commands do what they say.
+- Questions you type an answer to, such as wishes and names, open on the game window and work as in the terminal.
 - The menu bar is reorganised into clearer groups.
 - Many painted tiles are redrawn closer to the classic tiles, including sizes, engravings and unidentified items.
 - Walls fill their whole square, so there's no dark gap between a wall and the room beside it.

@@ -23,45 +23,135 @@
  */
 
 #import "InputWindowController.h"
-#import "NhTextInputEvent.h"
-#import "NhEventQueue.h"
 
-@implementation InputWindowController
+static const CGFloat kWidth = 480;
+static const CGFloat kMargin = 20;
 
--(void)runModalWithPrompt:(NSString *)prompt
-{
-	[promptField setStringValue:prompt];
-	[inputField setStringValue:@""];
-	[[NSApplication sharedApplication] runModalForWindow:[self window]];
+@interface InputWindowController () <NSTextFieldDelegate>
+@end
+
+@implementation InputWindowController {
+	NSTextField *			field;
+	void (^answer)(NSString *);
+	BOOL					finished;
 }
 
--(IBAction)doAccept:(id)sender
++(void)askWithPrompt:(NSString *)prompt parent:(NSWindow *)parent answer:(void (^)(NSString * text))answer
 {
-	NSString * text = [inputField stringValue];
-	NhTextInputEvent * e = [[NhTextInputEvent alloc] initWithText:text];
-	[[NhEventQueue instance] addEvent:e];
-	[[self window] close];
+	InputWindowController * win = [[InputWindowController alloc] initWithPrompt:prompt answer:answer];
+	if ( parent.isVisible ) {
+		[parent beginSheet:win.window completionHandler:nil];
+	} else {
+		[win.window center];
+		[win showWindow:win];
+	}
+	[win.window makeFirstResponder:win->field];
+	[NSApp runModalForWindow:win.window];
 }
 
--(IBAction)doCancel:(id)sender
+-(id)initWithPrompt:(NSString *)prompt answer:(void (^)(NSString *))theAnswer
 {
-	NSString * text = @"\033";
-	NhTextInputEvent * e = [[NhTextInputEvent alloc] initWithText:text];
-	[[NhEventQueue instance] addEvent:e];	
-	[[self window] close];
+	NSPanel * panel = [[NSPanel alloc] initWithContentRect:NSMakeRect(0, 0, kWidth, 100)
+												 styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
+												   backing:NSBackingStoreBuffered
+													 defer:YES];
+	if ( self = [super initWithWindow:panel] ) {
+		answer = [theAnswer copy];
+		panel.delegate = self;
+		panel.title = @"";
+		[self buildContentsWithPrompt:prompt];
+	}
+	return self;
+}
+
+-(void)buildContentsWithPrompt:(NSString *)prompt
+{
+	const CGFloat inner = kWidth - 2 * kMargin;
+
+	NSTextField * label = [NSTextField wrappingLabelWithString:prompt];
+	label.font = [NSFont systemFontOfSize:14 weight:NSFontWeightMedium];
+	label.preferredMaxLayoutWidth = inner;
+	[label.widthAnchor constraintEqualToConstant:inner].active = YES;
+
+	field = [NSTextField textFieldWithString:@""];
+	field.font = [NSFont systemFontOfSize:14];
+	field.delegate = self;
+	[field.widthAnchor constraintEqualToConstant:inner].active = YES;
+
+	NSButton * cancel = [NSButton buttonWithTitle:@"Cancel" target:self action:@selector(cancel:)];
+	NSButton * ok = [NSButton buttonWithTitle:@"OK" target:self action:@selector(accept:)];
+	ok.keyEquivalent = @"\r";
+	NSStackView * buttons = [[NSStackView alloc] init];
+	[buttons setViews:@[ cancel, ok ] inGravity:NSStackViewGravityTrailing];
+	buttons.spacing = 8;
+	[buttons.widthAnchor constraintEqualToConstant:inner].active = YES;
+
+	NSStackView * stack = [NSStackView stackViewWithViews:@[ label, field, buttons ]];
+	stack.orientation = NSUserInterfaceLayoutOrientationVertical;
+	stack.alignment = NSLayoutAttributeLeading;
+	stack.spacing = 12;
+	stack.edgeInsets = NSEdgeInsetsMake(20, kMargin, 16, kMargin);
+	stack.translatesAutoresizingMaskIntoConstraints = NO;
+
+	NSView * content = self.window.contentView;
+	[content addSubview:stack];
+	[NSLayoutConstraint activateConstraints:@[
+		[stack.topAnchor constraintEqualToAnchor:content.topAnchor],
+		[stack.leadingAnchor constraintEqualToAnchor:content.leadingAnchor],
+		[stack.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
+		[stack.bottomAnchor constraintEqualToAnchor:content.bottomAnchor],
+		[stack.widthAnchor constraintEqualToConstant:kWidth],
+	]];
+	[self.window setContentSize:stack.fittingSize];
+}
+
+-(BOOL)control:(NSControl *)control textView:(NSTextView *)textView doCommandBySelector:(SEL)command
+{
+	if ( command == @selector(insertNewline:) ) {
+		[self finishWith:[textView.string copy]];
+	} else if ( command == @selector(cancelOperation:) ) {
+		// as tty, Esc clears what's typed before it cancels
+		if ( textView.string.length )
+			textView.string = @"";
+		else
+			[self finishWith:@"\033"];
+	} else {
+		return NO;
+	}
+	return YES;
+}
+
+-(void)accept:(id)sender
+{
+	[self finishWith:[field.stringValue copy]];
+}
+
+-(void)cancel:(id)sender
+{
+	[self finishWith:@"\033"];
+}
+
+-(void)finishWith:(NSString *)text
+{
+	if ( finished )
+		return;
+	finished = YES;
+	answer(text);
+	NSWindow * parent = self.window.sheetParent;
+	if ( parent )
+		[parent endSheet:self.window];
+	[self.window close];
 }
 
 -(BOOL)windowShouldClose:(id)sender
 {
-	// user pressed close button in title bar
-	[self doCancel:sender];
-	return YES;
+	[self cancel:sender];
+	return NO;
 }
 
 -(void)windowWillClose:(NSNotification *)notification
 {
-	[[NSApplication sharedApplication] stopModal];
+	[NSApp stopModal];
 }
-
 
 @end

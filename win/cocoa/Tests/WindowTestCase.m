@@ -5,7 +5,7 @@ NSWindow * TestDialog(void)
 {
 	for ( NSWindow * window in NSApp.windows ) {
 		if ( window.isVisible )
-			return window;
+			return window.attachedSheet ?: window;
 	}
 	return nil;
 }

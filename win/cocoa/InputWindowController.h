@@ -23,15 +23,10 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#import "Protocols.h"
 
-@interface InputWindowController : NSWindowController <NSWindowDelegate> {
-	IBOutlet NSTextField *	promptField;
-	IBOutlet NSTextField *	inputField;
-}
+@interface InputWindowController : NSWindowController <NSWindowDelegate>
 
--(void)runModalWithPrompt:(NSString *)prompt;
--(IBAction)doAccept:(id)sender;
--(IBAction)doCancel:(id)sender;
+// the answer is "\033" when cancelled
++(void)askWithPrompt:(NSString *)prompt parent:(NSWindow *)parent answer:(void (^)(NSString * text))answer;
 
 @end
