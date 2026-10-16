@@ -3,11 +3,7 @@
 
 NSWindow * TestDialog(void)
 {
-	for ( NSWindow * window in NSApp.windows ) {
-		if ( window.isVisible )
-			return window.attachedSheet ?: window;
-	}
-	return nil;
+	return NSApp.modalWindow;
 }
 
 NSArray<NSButton *> * DialogButtons(void)
