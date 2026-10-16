@@ -34,7 +34,6 @@
 @class MenuWindowController;
 @class MessageWindowController;
 @class InputWindowController;
-@class ExtCommandWindowController;
 @class PlayerSelectionWindowController;
 @class NotesWindowController;
 @class StatsView;
@@ -61,7 +60,6 @@
 	IBOutlet EquipmentView					*	equipmentView;
 	
 	IBOutlet InputWindowController			*	inputWindow;
-	IBOutlet ExtCommandWindowController		*	extCommandWindow;
 	IBOutlet PlayerSelectionWindowController*	showPlayerSelection;
 	IBOutlet NotesWindowController			*	notesWindow;
 }

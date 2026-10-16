@@ -629,22 +629,22 @@ void cocoa_getlin(const char *prompt, char *line)
 int cocoa_get_ext_cmd()
 {
 	//NSLog(@"get_ext_cmd");
-	if ([[NhEventQueue instance] peek]) {
-		// already have extended command in queue
-	} else {
-		// get command event
+	// a menu item queues its command name after the '#'; otherwise ask
+	if ( ![[[NhEventQueue instance] peek] isKindOfClass:[NhTextInputEvent class]] )
 		[[MainWindowController instance] showExtendedCommands];
-	}
-	NhTextInputEvent *e = (NhTextInputEvent *) [[NhEventQueue instance] nextEvent];
-	assert( [e class] == [NhTextInputEvent class] );
-	const char * cmd = [e.text UTF8String];
+	// keys typed before the window opened can't be the answer
+	NhEvent * e;
+	do {
+		e = [[NhEventQueue instance] nextEvent];
+	} while ( ![e isKindOfClass:[NhTextInputEvent class]] );
+	const char * cmd = [((NhTextInputEvent *)e).text UTF8String];
 		
-	// return index of command, not its key
-	for ( int i = 0; extcmdlist[i].ef_txt; ++i ) {
-		if ( strcmp( extcmdlist[i].ef_txt, cmd ) == 0 ) {
-			return i;
-		}
-	}
+	if ( !*cmd )
+		return -1;
+	int * matches;
+	if ( extcmds_match(cmd, ECM_IGNOREAC | ECM_EXACTMATCH, &matches) == 1 )
+		return matches[0];
+	pline("%s%.60s: unknown extended command.", visctrl(extcmd_initiator()), cmd);
 	return -1;
 }
 

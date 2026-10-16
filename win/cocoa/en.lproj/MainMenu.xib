@@ -23,7 +23,6 @@
             <connections>
                 <outlet property="asciiModeMenuItem" destination="1560" id="1562"/>
                 <outlet property="equipmentView" destination="1656" id="1672"/>
-                <outlet property="extCommandWindow" destination="919" id="945"/>
                 <outlet property="inputWindow" destination="906" id="946"/>
                 <outlet property="mainView" destination="566" id="948"/>
                 <outlet property="messagesView" destination="1680" id="1688"/>
@@ -1475,7 +1474,7 @@
                                     <action selector="performMenuAction:" target="943" id="1102"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="#ChangeLevel" id="1032">
+                            <menuItem title="#LevelChange" id="1032">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1103"/>
@@ -1527,87 +1526,6 @@
             </items>
             <point key="canvasLocation" x="-260" y="408"/>
         </menu>
-        <customObject id="919" customClass="ExtCommandWindowController">
-            <connections>
-                <outlet property="acceptButton" destination="1488" id="1501"/>
-                <outlet property="menuView" destination="1492" id="1500"/>
-                <outlet property="window" destination="1485" id="1502"/>
-            </connections>
-        </customObject>
-        <window title="Extended Commands" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" id="1485" userLabel="Ext Command Window" customClass="NSPanel">
-            <windowStyleMask key="styleMask" titled="YES" resizable="YES" utility="YES"/>
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="157" y="203" width="398" height="258"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
-            <value key="minSize" type="size" width="250" height="100"/>
-            <view key="contentView" id="1486">
-                <rect key="frame" x="0.0" y="0.0" width="398" height="258"/>
-                <autoresizingMask key="autoresizingMask"/>
-                <subviews>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1487">
-                        <rect key="frame" x="234" y="12" width="76" height="32"/>
-                        <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="1494">
-                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
-                            <string key="keyEquivalent" base64-UTF8="YES">
-Gw
-</string>
-                        </buttonCell>
-                        <connections>
-                            <action selector="doCancel:" target="919" id="1498"/>
-                        </connections>
-                    </button>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1488">
-                        <rect key="frame" x="308" y="12" width="77" height="32"/>
-                        <buttonCell key="cell" type="push" title="Accept" bezelStyle="rounded" alignment="center" enabled="NO" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="1493">
-                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
-                            <string key="keyEquivalent" base64-UTF8="YES">
-DQ
-</string>
-                        </buttonCell>
-                        <connections>
-                            <action selector="doAccept:" target="919" id="1499"/>
-                        </connections>
-                    </button>
-                    <scrollView fixedFrame="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1489">
-                        <rect key="frame" x="0.0" y="60" width="398" height="198"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <clipView key="contentView" id="r72-rn-7R0">
-                            <rect key="frame" x="0.0" y="0.0" width="398" height="198"/>
-                            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                            <subviews>
-                                <customView id="1492" customClass="FlippedView">
-                                    <rect key="frame" x="0.0" y="0.0" width="397" height="198"/>
-                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                </customView>
-                            </subviews>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </clipView>
-                        <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="1491">
-                            <rect key="frame" x="0.0" y="183" width="383" height="15"/>
-                            <autoresizingMask key="autoresizingMask"/>
-                        </scroller>
-                        <scroller key="verticalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" doubleValue="1" horizontal="NO" id="1490">
-                            <rect key="frame" x="383" y="0.0" width="15" height="183"/>
-                            <autoresizingMask key="autoresizingMask"/>
-                        </scroller>
-                    </scrollView>
-                </subviews>
-                <constraints>
-                    <constraint firstItem="1487" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="1486" secondAttribute="leading" constant="20" id="LZX-WC-fdA"/>
-                    <constraint firstAttribute="trailing" secondItem="1488" secondAttribute="trailing" constant="20" symbolic="YES" id="Rm1-rP-Egk"/>
-                    <constraint firstAttribute="bottom" secondItem="1488" secondAttribute="bottom" constant="19" id="WC4-tI-LZk"/>
-                    <constraint firstItem="1487" firstAttribute="centerY" secondItem="1488" secondAttribute="centerY" id="irr-0X-MoB"/>
-                    <constraint firstItem="1487" firstAttribute="width" secondItem="1488" secondAttribute="width" multiplier="0.985915" id="kPf-gW-jGv"/>
-                    <constraint firstItem="1488" firstAttribute="leading" secondItem="1487" secondAttribute="trailing" constant="12" symbolic="YES" id="n8N-dl-2Q9"/>
-                </constraints>
-            </view>
-            <connections>
-                <outlet property="delegate" destination="919" id="1497"/>
-            </connections>
-            <point key="canvasLocation" x="-367" y="632"/>
-        </window>
         <customObject id="906" customClass="InputWindowController">
             <connections>
                 <outlet property="inputField" destination="907" id="914"/>

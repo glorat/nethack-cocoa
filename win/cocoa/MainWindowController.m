@@ -41,6 +41,7 @@
 #import "YesNoWindowController.h"
 #import "InputWindowController.h"
 #import "ExtCommandWindowController.h"
+#import "ExtCommandInput.h"
 #import "PlayerSelectionWindowController.h"
 #import "StatsView.h"
 #import "TileSet.h"
@@ -50,6 +51,7 @@
 #import "wincocoa.h" // cocoa_getpos etc.
 
 #include "hack.h" // BUFSZ etc.
+#include "func_tab.h"
 
 static MainWindowController* instance;
 
@@ -520,7 +522,16 @@ static MainWindowController* instance;
 	if (![NSThread isMainThread]) {
 		[self performSelectorOnMainThread:@selector(showExtendedCommands) withObject:nil waitUntilDone:NO];
 	} else {
-		[extCommandWindow runModal];
+		NSMutableArray * commands = [NSMutableArray array];
+		for ( int i = 0; extcmdlist[i].ef_txt; ++i ) {
+			const struct ext_func_tab * ec = &extcmdlist[i];
+			if ( (ec->flags & (CMD_NOT_AVAILABLE | INTERNALCMD)) || ((ec->flags & WIZMODECMD) && !wizard) )
+				continue;
+			[commands addObject:[NhExtCommand commandWithName:@(ec->ef_txt) help:@(ec->ef_desc) autocompletes:(ec->flags & AUTOCOMPLETE) != 0]];
+		}
+		[ExtCommandWindowController askWithCommands:commands answer:^(NSString * command) {
+			[[NhEventQueue instance] addEvent:[NhTextInputEvent eventWithText:command]];
+		}];
 	}
 }
 

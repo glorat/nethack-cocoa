@@ -23,16 +23,11 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#import "Protocols.h"
 
+@class NhExtCommand;
 
-@interface ExtCommandWindowController : NSWindowController <NSWindowDelegate> {
-	IBOutlet NSView * menuView;
-	IBOutlet NSButton * acceptButton;
-}
+@interface ExtCommandWindowController : NSWindowController <NSWindowDelegate>
 
--(void)runModal;
--(IBAction)doAccept:(id)sender;
--(IBAction)doCancel:(id)sender;
++(void)askWithCommands:(NSArray<NhExtCommand *> *)commands answer:(void (^)(NSString * command))answer;
 
 @end

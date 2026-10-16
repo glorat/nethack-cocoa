@@ -69,9 +69,10 @@ static void After(NSTimeInterval delay, void (^block)(void))
 	};
 	After(0.1, runNext);
 	__block BOOL timedOut = NO;
-	NSTimer * timeout = [NSTimer timerWithTimeInterval:10 repeats:NO block:^(NSTimer * _) {
+	NSTimer * timeout = [NSTimer timerWithTimeInterval:5 repeats:NO block:^(NSTimer * _) {
 		timedOut = YES;
 		[TestDialog() close];
+		[NSApp stopModal];
 	}];
 	[[NSRunLoop mainRunLoop] addTimer:timeout forMode:NSRunLoopCommonModes];
 	show();
