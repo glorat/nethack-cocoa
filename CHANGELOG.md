@@ -2,27 +2,29 @@
 
 Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [release notes](https://www.nethack.org/).
 
-## Unreleased
+## 5.0.0-3 (2026-10-16)
 
-- Monsters and objects on lit room floor are drawn over the floor instead of on black.
-- The click that brings the window to the front no longer also moves your character.
-- Clicking a distant square you haven't explored no longer starts travel there. Position prompts such as `;` still accept those squares.
-- Menus are redrawn. Lists you choose from, such as inventory, pickup and drop, show each item's picture and letter in a scrolling list: click a row or type its letter, type a number first to take only that many, or move with the arrow keys and press space. Read-only menus such as `^X` attributes and the dungeon overview are plain text you can select and copy. Lines are no longer squeezed into a narrow column.
-- The extended command prompt (`#`) works as in the terminal: type a command's name and press Return.
-- Menu bar commands do what they say.
-- Questions you type an answer to, such as wishes and names, open on the game window and work as in the terminal.
-- The name you enter for a new character follows the same rules as in the terminal.
+### Changed
+
+- Menus are redrawn: lists you pick from show each item's picture and letter, and read-only lists are text you can select and copy.
+- Short questions show one button per answer, labelled with its key.
+- The direction, extended command (`#`) and typed-answer prompts take the same keys as the terminal.
 - The menu bar is reorganised into clearer groups.
-- Many painted tiles are redrawn closer to the classic tiles, including sizes, engravings and unidentified items.
-- Walls fill their whole square, so there's no dark gap between a wall and the room beside it.
+- Many painted tiles are redrawn closer to the classic tiles, and wand and spell beams are sharper and easier to tell apart.
+- Water, lava, ice, air and cloud look calmer across large areas.
+- The download is about 30 MB smaller.
+
+### Fixed
+
+- Menu bar commands do what they say.
+- Monsters and objects on lit floor are drawn over the floor instead of on black.
+- Walls fill their whole square, with no dark gap beside them.
+- The click that brings the window to the front no longer also moves your character.
+- Clicking a distant unexplored square no longer starts travel there.
+- Closing a message window with Return, space or Esc no longer also answers the next question.
+- Read-only lists such as the dungeon overview wait for you to close them, so the tombstone no longer opens on top.
 - The app no longer freezes when you hover over the map after a game ends.
-- Closing a message window with Return, space or Esc no longer also answers the next question. Before, closing the window before the tutorial question this way skipped the question and left a second copy of it on screen.
-- Short questions show one button per answer. In longer menus where you pick one thing, the row under the pointer lights up, a click chooses it, and there's no OK button that did nothing.
-- The direction prompt takes the same keys as the terminal and opens beside your character, and the arrow keys follow the number_pad option.
-- Read-only lists such as the dungeon overview now wait for you to close them before the game goes on. At the end of a game, the tombstone and score list no longer open on top of the overview.
-- Wand and spell beams are drawn sharply at full size instead of enlarged from the 16px tiles, and each kind looks different: lightning is jagged, poison gas is a haze, death is a dark ray.
-- Water looks like a deeper version of a pool or moat, and lava, ice, air and cloud are calmer across large areas.
-- The download is about 30 MB smaller, because the painted tiles now use 256 colours.
+- Character names follow the terminal's length and character rules.
 
 ## 5.0.0-2 (2026-10-15)
 
