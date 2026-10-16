@@ -23,14 +23,10 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#import "Protocols.h"
 
+@interface DirectionWindowController : NSWindowController <NSWindowDelegate>
 
-@interface DirectionWindowController : NSWindowController <NSWindowDelegate> {
-
-}
-
--(void)runModalWithPrompt:(NSString *)prompt;
--(IBAction)chooseDirection:(id)sender;
++(void)askWithPrompt:(NSString *)prompt directions:(NSString *)directions near:(NSRect)heroOnScreen;
++(NSRect)frameForSize:(NSSize)size near:(NSRect)heroOnScreen within:(NSRect)visible;
 
 @end

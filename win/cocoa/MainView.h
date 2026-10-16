@@ -47,6 +47,7 @@
 @property (strong,nonatomic) NSString * contextMenuObject;
 
 - (void)cliparoundX:(int)x y:(int)y;
+- (NSRect)screenRectForTileX:(int)x y:(int)y;
 - (NSFont *)asciiFont;
 - (BOOL)setAsciiFont:(NSFont *)font;
 - (void)enableAsciiMode:(BOOL)enable;

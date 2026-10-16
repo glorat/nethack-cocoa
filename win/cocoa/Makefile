@@ -176,18 +176,19 @@ run: app
 # Tests build for this Mac only and link just the code under test, not the core
 TEST_BUNDLE := $(BUILD)/CocoaTests.xctest
 TEST_BINARY := $(TEST_BUNDLE)/Contents/MacOS/CocoaTests
-TEST_SRC := $(wildcard Tests/*.m) YesNoInput.m YesNoWindowController.m iHack/NhYnQuestion.m
+TEST_SRC := $(wildcard Tests/*.m) YesNoInput.m YesNoWindowController.m iHack/NhYnQuestion.m \
+	DirectionWindowController.m KeyEvent.m
 XCTEST_FW = $(shell $(if $(DEVELOPER_DIR),DEVELOPER_DIR=$(DEVELOPER_DIR)) xcrun --show-sdk-platform-path)/Developer/Library/Frameworks
 
 test: $(TEST_BINARY)
 	xcrun xctest $(TEST_BUNDLE)
 
 $(TEST_BINARY): $(TEST_SRC) $(wildcard Tests/*.h) YesNoInput.h YesNoWindowController.h \
-	iHack/NhYnQuestion.h Tests/Info.plist | $(BUILD)
+	iHack/NhYnQuestion.h DirectionWindowController.h KeyEvent.h Tests/Info.plist | $(BUILD)
 	@mkdir -p $(@D)
 	cp Tests/Info.plist $(TEST_BUNDLE)/Contents/
 	$(CC) -arch $(shell uname -m) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -fobjc-arc \
-		-bundle -I. -IiHack -ITests -F$(XCTEST_FW) -framework XCTest -framework Cocoa \
+		-bundle -I. -IiHack -ITests -F$(XCTEST_FW) -framework XCTest -framework Cocoa -framework Carbon \
 		-Wl,-rpath,$(XCTEST_FW) $(TEST_SRC) -o $@
 
 $(OBJDIR) $(BUILD):

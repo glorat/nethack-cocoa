@@ -237,6 +237,14 @@ static const int zoomLevelCount = sizeof zoomLevels / sizeof zoomLevels[0];
 	NSRect rect = NSMakeRect( center.x-border.width, center.y-border.height, 2*border.width, 2*border.height );
 	[self scrollRectToVisible:rect];	 	 
 }
+- (NSRect)screenRectForTileX:(int)x y:(int)y
+{
+	NSRect tile = NSMakeRect(x * tileSize.width, y * tileSize.height, tileSize.width, tileSize.height);
+	if ( !NSIntersectsRect(tile, self.visibleRect) )
+		return NSZeroRect;
+	return [self.window convertRectToScreen:[self convertRect:tile toView:nil]];
+}
+
 - (void)cliparoundHero
 {
 	[self cliparoundX:u.ux y:u.uy];

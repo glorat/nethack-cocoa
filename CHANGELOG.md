@@ -14,6 +14,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - The app no longer freezes when you hover over the map after a game ends.
 - Closing a message window with Return, space or Esc no longer also answers the next question. Before, closing the window before the tutorial question this way skipped the question and left a second copy of it on screen.
 - Short questions show one button per answer. In longer menus where you pick one thing, the row under the pointer lights up, a click chooses it, and there's no OK button that did nothing.
+- The direction prompt takes the same keys as the terminal and opens beside your character, and the arrow keys follow the number_pad option.
 - Read-only lists such as the dungeon overview now wait for you to close them before the game goes on. At the end of a game, the tombstone and score list no longer open on top of the overview.
 - Wand and spell beams are drawn sharply at full size instead of enlarged from the 16px tiles, and each kind looks different: lightning is jagged, poison gas is a haze, death is a dark ray.
 - Water looks like a deeper version of a pool or moat, and lava, ice, air and cloud are calmer across large areas.

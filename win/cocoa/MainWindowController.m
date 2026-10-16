@@ -540,7 +540,7 @@ static MainWindowController* instance;
 	if (![NSThread isMainThread]) {
 		[self performSelectorOnMainThread:@selector(showDirectionWithPrompt:) withObject:prompt waitUntilDone:NO];
 	} else {
-		[directionWindow runModalWithPrompt:prompt];
+		[DirectionWindowController askWithPrompt:prompt directions:@(gc.Cmd.dirchars) near:[mainView screenRectForTileX:u.ux y:u.uy]];
 	}			
 }
 
