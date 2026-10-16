@@ -2,6 +2,12 @@
 
 Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [release notes](https://www.nethack.org/).
 
+## Unreleased
+
+### Fixed
+
+- The Wearing panel is an even grid, with worn items drawn at full size.
+
 ## 5.0.0-3 (2026-10-16)
 
 ### Changed

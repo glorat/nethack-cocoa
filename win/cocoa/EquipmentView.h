@@ -26,18 +26,8 @@
 
 
 @interface EquipmentView : NSView {
-	IBOutlet NSImageView *	helmet;
-	IBOutlet NSImageView *	blindfold;	// blindfold, lenses, towel
-	IBOutlet NSImageView *	ringLeft;
-	IBOutlet NSImageView *	ringRight;
-	IBOutlet NSImageView *	amulet;
-	IBOutlet NSImageView *	weaponHand;
-	IBOutlet NSImageView *	alternateHand;	// shield or alternate weapon
-	IBOutlet NSImageView *	shirt;
-	IBOutlet NSImageView *	cloak;
-	IBOutlet NSImageView *	armor;
-	IBOutlet NSImageView *	gloves;
-	IBOutlet NSImageView *	boots;
+	int		glyphs[12];
+	NSArray *	tips;
 }
 
 - (void)updateInventory;

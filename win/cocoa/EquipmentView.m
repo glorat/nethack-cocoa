@@ -30,36 +30,74 @@
 #import "EquipmentView.h"
 #import "TileSet.h"
 
+#define CELL	32.0
+#define COLS	3
+#define ROWS	4
+#define GRID_TOP	21.0
+
+static NSString * const s_slotNames[COLS*ROWS] = {
+	@"amulet",		@"helmet",	@"blindfold/lenses",
+	@"weapon",		@"armor",	@"shield",
+	@"gloves",		@"shirt",	@"cloak",
+	@"left ring",	@"boots",	@"right ring",
+};
+
 @implementation EquipmentView
 
-- (id)initWithFrame:(NSRect)frame 
+- (id)initWithCoder:(NSCoder *)coder
 {
-    self = [super initWithFrame:frame];
-    if (self) {
-    }
-    return self;
-}
-
-- (void)drawRect:(NSRect)dirtyRect 
-{
-}
-
-- (void)updateSlot:(NSImageView *)slot item:(struct obj *)item text:(NSString *)text
-{
-	NSImage * image = nil;
-	if ( item ) {
-		int glyph = obj_to_glyph(item,rn2_on_display_rng);
-		if ( glyph != NO_GLYPH ) {
-			image = [[TileSet instance] imageForGlyph:glyph enabled:YES];
-			char * description = doname(item);
-			char invlet = item->invlet;
-			text = [NSString stringWithFormat:@"(%c) %s", invlet, description];
-			if ( [text hasSuffix:@" (being worn)"] )
-				text = [text substringToIndex:[text length] - 13];
-		}
+	if ( self = [super initWithCoder:coder] ) {
+		for ( int slot = 0; slot < COLS*ROWS; ++slot )
+			glyphs[slot] = NO_GLYPH;
 	}
-	[slot setImage:image];
-	[slot setToolTip:text];
+	return self;
+}
+
+- (BOOL)isFlipped
+{
+	return YES;
+}
+
+- (NSRect)gridRect
+{
+	CGFloat width = COLS * (CELL + 1) + 1;
+	CGFloat height = ROWS * (CELL + 1) + 1;
+	return NSMakeRect(floor((self.bounds.size.width - width) / 2), GRID_TOP, width, height);
+}
+
+- (NSRect)rectForSlot:(int)slot
+{
+	NSRect grid = [self gridRect];
+	return NSMakeRect(grid.origin.x + 1 + (slot % COLS) * (CELL + 1), grid.origin.y + 1 + (slot / COLS) * (CELL + 1), CELL, CELL);
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+	[[NSColor colorWithWhite:0.56 alpha:1.0] set];
+	NSRectFill([self gridRect]);
+
+	TileSet * tileSet = [TileSet instance];
+	NSSize tileSize = tileSet.tileSize;
+	for ( int slot = 0; slot < COLS*ROWS; ++slot ) {
+		NSRect cell = [self rectForSlot:slot];
+		[[NSColor colorWithWhite:0.72 alpha:1.0] set];
+		NSRectFill(cell);
+		if ( glyphs[slot] == NO_GLYPH || tileSet == nil )
+			continue;
+
+		CGFloat scale = MIN(CELL / tileSize.width, CELL / tileSize.height);
+		if ( scale > 1.0 )
+			scale = floor(scale);
+		NSSize size = NSMakeSize(round(tileSize.width * scale), round(tileSize.height * scale));
+		NSRect r = NSMakeRect(cell.origin.x + floor((CELL - size.width) / 2), cell.origin.y + floor((CELL - size.height) / 2), size.width, size.height);
+		[[NSGraphicsContext currentContext] setImageInterpolation:scale < 1.0 ? NSImageInterpolationMedium : NSImageInterpolationNone];
+		[tileSet.image drawInRect:r fromRect:[tileSet sourceRectForGlyph:glyphs[slot]] operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
+	}
+}
+
+- (NSString *)view:(NSView *)view stringForToolTip:(NSToolTipTag)tag point:(NSPoint)point userData:(void *)data
+{
+	return tips[(NSInteger)data];
 }
 
 - (void)updateInventory
@@ -69,22 +107,28 @@
 		return;
 	}
 
-	[self updateSlot:weaponHand		item:uwep		text:@"weapon"];
-	[self updateSlot:alternateHand	item:u.twoweap?uswapwep:uarms	text:@"shield"];
-	[self updateSlot:shirt			item:uarmu		text:@"shirt"];
-	[self updateSlot:cloak			item:uarmc		text:@"cloak"];
-	[self updateSlot:helmet			item:uarmh		text:@"helmet"];
-	[self updateSlot:gloves			item:uarmg		text:@"gloves"];
-	[self updateSlot:boots			item:uarmf		text:@"boots"];
-	[self updateSlot:ringRight		item:uright		text:@"right ring"];
-	[self updateSlot:ringLeft		item:uleft		text:@"left ring"];
-	[self updateSlot:blindfold		item:ublindf	text:@"blindfold/lenses"];
-	[self updateSlot:amulet			item:uamul		text:@"amulet"];
-	[self updateSlot:armor			item:uarm		text:@"armor"];
-	 
-	//	uquiver 
-	//	uchain
-	//	uball
+	struct obj * items[COLS*ROWS] = {
+		uamul,	uarmh,	ublindf,
+		uwep,	uarm,	u.twoweap ? uswapwep : uarms,
+		uarmg,	uarmu,	uarmc,
+		uleft,	uarmf,	uright,
+	};
+	NSMutableArray * newTips = [NSMutableArray array];
+	[self removeAllToolTips];
+	for ( int slot = 0; slot < COLS*ROWS; ++slot ) {
+		struct obj * item = items[slot];
+		NSString * text = s_slotNames[slot];
+		glyphs[slot] = item ? obj_to_glyph(item, rn2_on_display_rng) : NO_GLYPH;
+		if ( glyphs[slot] != NO_GLYPH ) {
+			text = [NSString stringWithFormat:@"(%c) %s", item->invlet, doname(item)];
+			if ( [text hasSuffix:@" (being worn)"] )
+				text = [text substringToIndex:[text length] - 13];
+		}
+		[newTips addObject:text];
+		[self addToolTipRect:[self rectForSlot:slot] owner:self userData:(void *)(NSInteger)slot];
+	}
+	tips = newTips;
+	[self setNeedsDisplay:YES];
 }
 
 @end
