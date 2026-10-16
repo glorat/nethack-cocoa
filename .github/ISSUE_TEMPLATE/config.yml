@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Problem with the game itself
+    url: https://github.com/NetHack/NetHack/issues
+    about: Monsters, items, rules and other gameplay that behaves the same in the terminal version belong upstream.

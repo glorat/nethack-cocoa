@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in the Mac app doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: From NetHack → About NetHack, e.g. 5.0.0 (3).
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 15.5
+    validations:
+      required: true
+  - type: dropdown
+    id: mac
+    attributes:
+      label: Mac
+      options:
+        - Apple Silicon
+        - Intel
+    validations:
+      required: true
+  - type: dropdown
+    id: tty
+    attributes:
+      label: Does it also happen in the terminal version of NetHack?
+      description: If it does, it's probably a game bug; please report it to NetHack upstream instead.
+      options:
+        - "No"
+        - Don't know
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Options from your .nethackrc, the tile set you use, crash reports, and so on.

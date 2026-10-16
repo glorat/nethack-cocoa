@@ -1,0 +1,9 @@
+This repository contains code under more than one license. Where a file's
+header names its own license, that license applies.
+
+The Mac interface in win/cocoa is licensed under the GNU General Public
+License, version 2. See win/cocoa/license.txt.
+
+NetHack itself and the tile sets the app ships, including the painted tiles
+in win/cocoa/Resources/tiles, are licensed under the NetHack General Public
+License. See dat/license.

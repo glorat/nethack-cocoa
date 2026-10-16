@@ -1,0 +1,11 @@
+name: Feature request
+description: Suggest an improvement to the Mac app.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like
+      description: What you'd like the app to do, and what it would help you with.
+    validations:
+      required: true

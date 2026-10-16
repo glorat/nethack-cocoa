@@ -74,5 +74,5 @@ This is an independent project, not an official NetHack DevTeam release.
 
 ## License
 
-- The Mac interface in `win/cocoa` is licensed under the [GNU General Public License v2](../win/cocoa/license.txt).
+- The Mac interface in `win/cocoa` is licensed under the [GNU General Public License v2](../win/cocoa/license.txt), except where a file's header says otherwise.
 - NetHack and the tile sets are licensed under the [NetHack General Public License](../dat/license).
