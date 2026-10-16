@@ -774,26 +774,25 @@
                 <menuItem title="Game" id="83">
                     <menu key="submenu" title="Game" id="81">
                         <items>
-                            <menuItem title="Version" keyEquivalent="v" id="82">
+                            <menuItem title="Version" identifier="versionshort" keyEquivalent="V" id="82">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="956"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Extended Version" keyEquivalent="v" id="72">
+                            <menuItem title="Extended Version" identifier="version" keyEquivalent="v" id="72">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="957"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="History" keyEquivalent="V" id="73">
-                                <modifierMask key="keyEquivalentModifierMask"/>
+                            <menuItem title="History" identifier="history" id="73">
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="958"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Explore Mode" keyEquivalent="X" id="75">
-                                <modifierMask key="keyEquivalentModifierMask"/>
+                            <menuItem title="Explore Mode" identifier="exploremode" keyEquivalent="X" id="75">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="959"/>
                                 </connections>
@@ -807,13 +806,13 @@
                             <menuItem isSeparatorItem="YES" id="74">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="Options" keyEquivalent="O" id="1021">
+                            <menuItem title="Options" identifier="options" keyEquivalent="O" id="1021">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1121"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Toggle Auto Pickup" keyEquivalent="2" id="1039">
+                            <menuItem title="Toggle Auto Pickup" identifier="autopickup" keyEquivalent="2" id="1039">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1122"/>
@@ -907,69 +906,69 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Move" id="1058">
                         <items>
-                            <menuItem title="North" keyEquivalent="k" id="1059">
+                            <menuItem title="North" identifier="movenorth" keyEquivalent="k" id="1059">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1070"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="South" keyEquivalent="j" id="1060">
+                            <menuItem title="South" identifier="movesouth" keyEquivalent="j" id="1060">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1071"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="East" keyEquivalent="l" id="1061">
+                            <menuItem title="East" identifier="moveeast" keyEquivalent="l" id="1061">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1072"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="West" keyEquivalent="h" id="1062">
+                            <menuItem title="West" identifier="movewest" keyEquivalent="h" id="1062">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1073"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="North-East" keyEquivalent="u" id="1063">
+                            <menuItem title="North-East" identifier="movenortheast" keyEquivalent="u" id="1063">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1074"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="North-West" keyEquivalent="y" id="1064">
+                            <menuItem title="North-West" identifier="movenorthwest" keyEquivalent="y" id="1064">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1075"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="South-East" keyEquivalent="n" id="1065">
+                            <menuItem title="South-East" identifier="movesoutheast" keyEquivalent="n" id="1065">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1076"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="South-West" keyEquivalent="b" id="1066">
+                            <menuItem title="South-West" identifier="movesouthwest" keyEquivalent="b" id="1066">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1077"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="1068"/>
-                            <menuItem title="Up" keyEquivalent="," id="711">
+                            <menuItem title="Up" identifier="up" keyEquivalent="," id="711">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="994"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Down" keyEquivalent="." id="690">
+                            <menuItem title="Down" identifier="down" keyEquivalent="." id="690">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="973"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="1069"/>
-                            <menuItem title="Travel" keyEquivalent="-" id="1056">
+                            <menuItem title="Travel" identifier="travel" keyEquivalent="-" id="1056">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1078"/>
@@ -982,7 +981,7 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Gear" id="671">
                         <items>
-                            <menuItem title="Remove All Armor" keyEquivalent="A" id="683">
+                            <menuItem title="Remove All Armor" identifier="takeoffall" keyEquivalent="A" id="683">
                                 <attributedString key="attributedTitle"/>
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
@@ -990,51 +989,51 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="677"/>
-                            <menuItem title="Weild Weapon" keyEquivalent="w" id="682">
+                            <menuItem title="Wield Weapon" identifier="wield" keyEquivalent="w" id="682">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="962"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Exchange Weapons" keyEquivalent="x" id="681">
+                            <menuItem title="Exchange Weapons" identifier="swap" keyEquivalent="x" id="681">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="963"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Two Weapon Combat" keyEquivalent="2" id="680">
-                                <modifierMask key="keyEquivalentModifierMask" option="YES"/>
+                            <menuItem title="Two Weapon Combat" identifier="twoweapon" keyEquivalent="X" id="680">
+                                <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="964"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Load Quiver" keyEquivalent="Q" id="679">
+                            <menuItem title="Load Quiver" identifier="quiver" keyEquivalent="Q" id="679">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="965"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="672"/>
-                            <menuItem title="Wear Armor" keyEquivalent="W" id="678">
+                            <menuItem title="Wear Armor" identifier="wear" keyEquivalent="W" id="678">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="966"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Take Off Armor" keyEquivalent="T" id="676">
+                            <menuItem title="Take Off Armor" identifier="takeoff" keyEquivalent="T" id="676">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="967"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="673"/>
-                            <menuItem title="Put On Non-Armor" keyEquivalent="P" id="675">
+                            <menuItem title="Put On Non-Armor" identifier="puton" keyEquivalent="P" id="675">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="968"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Remove Non-Armor" keyEquivalent="R" id="674">
+                            <menuItem title="Remove Non-Armor" identifier="remove" keyEquivalent="R" id="674">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="969"/>
@@ -1047,151 +1046,151 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Action" id="686">
                         <items>
-                            <menuItem title="Apply" keyEquivalent="a" id="687">
+                            <menuItem title="Apply" identifier="apply" keyEquivalent="a" id="687">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="970"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Chat" keyEquivalent="c" id="688">
+                            <menuItem title="Chat" identifier="chat" keyEquivalent="c" id="688">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="971"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Close Door" keyEquivalent="c" id="689">
+                            <menuItem title="Close Door" identifier="close" keyEquivalent="c" id="689">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="972"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Dip" keyEquivalent="d" id="1051">
+                            <menuItem title="Dip" identifier="dip" keyEquivalent="d" id="1051">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1205"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Drop Many" keyEquivalent="D" id="691">
+                            <menuItem title="Drop Many" identifier="droptype" keyEquivalent="D" id="691">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="974"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Drop" keyEquivalent="d" id="692">
+                            <menuItem title="Drop" identifier="drop" keyEquivalent="d" id="692">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="975"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Eat" keyEquivalent="e" id="693">
+                            <menuItem title="Eat" identifier="eat" keyEquivalent="e" id="693">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="976"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Engrave" keyEquivalent="E" id="694">
+                            <menuItem title="Engrave" identifier="engrave" keyEquivalent="E" id="694">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="977"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Enhance Weapon Skill" keyEquivalent="e" id="1052">
+                            <menuItem title="Enhance Weapon Skill" identifier="enhance" keyEquivalent="e" id="1052">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1080"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Fight" keyEquivalent="F" id="695">
+                            <menuItem title="Fight" identifier="fight" keyEquivalent="F" id="695">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="978"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Fire From Quiver" keyEquivalent="f" id="696">
+                            <menuItem title="Fire From Quiver" identifier="fire" keyEquivalent="f" id="696">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="979"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Force" keyEquivalent="f" id="697">
+                            <menuItem title="Force" identifier="force" keyEquivalent="f" id="697">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="980"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Jump" keyEquivalent="j" id="700">
+                            <menuItem title="Jump" identifier="jump" keyEquivalent="j" id="700">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="982"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Kick" keyEquivalent="d" id="701">
+                            <menuItem title="Kick" identifier="kick" keyEquivalent="d" id="701">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="983"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Loot" keyEquivalent="l" id="702">
+                            <menuItem title="Loot" identifier="loot" keyEquivalent="l" id="702">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="984"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Open Door" keyEquivalent="o" id="703">
+                            <menuItem title="Open Door" identifier="open" keyEquivalent="o" id="703">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="985"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Pay" keyEquivalent="p" id="704">
+                            <menuItem title="Pay" identifier="pay" keyEquivalent="p" id="704">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="986"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Pick Up" keyEquivalent="," id="1038">
+                            <menuItem title="Pick Up" identifier="pickup" keyEquivalent="," id="1038">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1081"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Rest" keyEquivalent="." id="705">
+                            <menuItem title="Rest" identifier="wait" keyEquivalent="." id="705">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="987"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="#Ride" id="706">
-                                <modifierMask key="keyEquivalentModifierMask"/>
+                            <menuItem title="Ride" identifier="ride" keyEquivalent="R" id="706">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="988"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Search" keyEquivalent="s" id="707">
+                            <menuItem title="Search" identifier="search" keyEquivalent="s" id="707">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="989"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Sit" keyEquivalent="s" id="708">
+                            <menuItem title="Sit" identifier="sit" keyEquivalent="s" id="708">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="990"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Throw" keyEquivalent="t" id="709">
+                            <menuItem title="Throw" identifier="throw" keyEquivalent="t" id="709">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="991"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Untrap" keyEquivalent="u" id="710">
+                            <menuItem title="Untrap" identifier="untrap" keyEquivalent="u" id="710">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="992"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Wipe Face" keyEquivalent="w" id="712">
+                            <menuItem title="Wipe Face" identifier="wipe" keyEquivalent="w" id="712">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="995"/>
@@ -1204,75 +1203,69 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Magic" id="724">
                         <items>
-                            <menuItem title="Quaff Potion" keyEquivalent="q" id="725">
+                            <menuItem title="Quaff Potion" identifier="quaff" keyEquivalent="q" id="725">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="996"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Read Scroll/Book" keyEquivalent="r" id="726">
+                            <menuItem title="Read Scroll/Book" identifier="read" keyEquivalent="r" id="726">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="997"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Zap Wand" keyEquivalent="z" id="727">
+                            <menuItem title="Zap Wand" identifier="zap" keyEquivalent="z" id="727">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="998"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Zap Spell" keyEquivalent="Z" id="729">
+                            <menuItem title="Zap Spell" identifier="cast" keyEquivalent="Z" id="729">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="999"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Dip" keyEquivalent="d" id="730">
-                                <modifierMask key="keyEquivalentModifierMask" option="YES"/>
-                                <connections>
-                                    <action selector="performMenuAction:" target="943" id="1000"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Rub" keyEquivalent="r" id="731">
+                            <menuItem title="Rub" identifier="rub" keyEquivalent="r" id="731">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1001"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Invoke" keyEquivalent="i" id="732">
+                            <menuItem title="Invoke" identifier="invoke" keyEquivalent="i" id="732">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1002"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="728"/>
-                            <menuItem title="Offer Sacrifice" keyEquivalent="o" id="733">
+                            <menuItem title="Offer Sacrifice" identifier="offer" keyEquivalent="o" id="733">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1003"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Pray" keyEquivalent="p" id="734">
+                            <menuItem title="Pray" identifier="pray" keyEquivalent="p" id="734">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1004"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="744"/>
-                            <menuItem title="Teleport" keyEquivalent="t" id="735">
+                            <menuItem title="Teleport" identifier="teleport" keyEquivalent="t" id="735">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1005"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Monster Action" keyEquivalent="m" id="736">
+                            <menuItem title="Monster Action" identifier="monster" keyEquivalent="m" id="736">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1006"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Turn Undead" keyEquivalent="t" id="737">
+                            <menuItem title="Turn Undead" identifier="turn" keyEquivalent="t" id="737">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1007"/>
@@ -1285,88 +1278,88 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Info" id="748">
                         <items>
-                            <menuItem title="Inventory" keyEquivalent="i" id="762">
+                            <menuItem title="Inventory" identifier="inventory" keyEquivalent="i" id="762">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1008"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Inventory By Type" keyEquivalent="I" id="1054">
+                            <menuItem title="Inventory By Type" identifier="inventtype" keyEquivalent="I" id="1054">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1082"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="1042"/>
-                            <menuItem title="Look Here" keyEquivalent=";" id="1036">
+                            <menuItem title="Look Here" identifier="look" keyEquivalent=";" id="1036">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1083"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="What Is ?" keyEquivalent="/" id="1019">
+                            <menuItem title="What Is ?" identifier="whatis" keyEquivalent="/" id="1019">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1084"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Show" keyEquivalent=";" id="1037">
+                            <menuItem title="Show" identifier="glance" keyEquivalent=";" id="1037">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1085"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Type Of Trap" keyEquivalent="6" id="1040">
+                            <menuItem title="Type Of Trap" identifier="showtrap" keyEquivalent="6" id="1040">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1086"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="What Does ?" keyEquivalent="7" id="1055">
+                            <menuItem title="What Does ?" identifier="whatdoes" keyEquivalent="7" id="1055">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1087"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="1041"/>
-                            <menuItem title="Current Equipment" keyEquivalent="8" id="1049">
+                            <menuItem title="Current Equipment" identifier="seeall" keyEquivalent="8" id="1049">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1088"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Current Weapon" keyEquivalent="0" indentationLevel="1" id="1044">
+                            <menuItem title="Current Weapon" identifier="seeweapon" keyEquivalent="0" indentationLevel="1" id="1044">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1089"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Current Armor" keyEquivalent="[" indentationLevel="1" id="1045">
+                            <menuItem title="Current Armor" identifier="seearmor" keyEquivalent="[" indentationLevel="1" id="1045">
                                 <attributedString key="attributedTitle"/>
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1090"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Current Rings" keyEquivalent="=" indentationLevel="1" id="1046">
+                            <menuItem title="Current Rings" identifier="seerings" keyEquivalent="=" indentationLevel="1" id="1046">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1091"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Current Amulet" keyEquivalent="'" indentationLevel="1" id="1047">
+                            <menuItem title="Current Amulet" identifier="seeamulet" keyEquivalent="'" indentationLevel="1" id="1047">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1092"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Current Tools" keyEquivalent="9" indentationLevel="1" id="1048">
+                            <menuItem title="Current Tools" identifier="seetools" keyEquivalent="9" indentationLevel="1" id="1048">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1093"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Count Gold" keyEquivalent="4" id="1050">
+                            <menuItem title="Count Gold" identifier="showgold" keyEquivalent="4" id="1050">
                                 <attributedString key="attributedTitle"/>
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
@@ -1374,44 +1367,44 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="1043"/>
-                            <menuItem title="Attributes" keyEquivalent="x" id="1034">
+                            <menuItem title="Attributes" identifier="attributes" keyEquivalent="x" id="1034">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1095"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="#Conduct" id="761">
-                                <modifierMask key="keyEquivalentModifierMask"/>
+                            <menuItem title="Conduct" identifier="conduct" keyEquivalent="C" id="761">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1009"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Discoveries" keyEquivalent="\" id="760">
+                            <menuItem title="Discoveries" identifier="known" keyEquivalent="\" id="760">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1010"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="List Known Spells" keyEquivalent="=" id="759">
+                            <menuItem title="List Known Spells" identifier="showspells" keyEquivalent="=" id="759">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1011"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Adjust Letters" keyEquivalent="a" id="758">
+                            <menuItem title="Adjust Letters" identifier="adjust" keyEquivalent="a" id="758">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1012"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="750"/>
-                            <menuItem title="Name Object" keyEquivalent="n" id="757">
+                            <menuItem title="Name Object" identifier="name" keyEquivalent="n" id="757">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1013"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Call (name) Creature" keyEquivalent="C" id="755">
+                            <menuItem title="Call (name) Creature" identifier="call" keyEquivalent="C" id="755">
                                 <attributedString key="attributedTitle"/>
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
@@ -1419,12 +1412,6 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="749"/>
-                            <menuItem title="Qualifications" keyEquivalent="e" id="753">
-                                <modifierMask key="keyEquivalentModifierMask" option="YES"/>
-                                <connections>
-                                    <action selector="performMenuAction:" target="943" id="1016"/>
-                                </connections>
-                            </menuItem>
                         </items>
                     </menu>
                 </menuItem>
@@ -1432,49 +1419,48 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Wizard Mode" id="1024">
                         <items>
-                            <menuItem title="Detect" keyEquivalent="e" id="1025">
+                            <menuItem title="Detect" identifier="wizdetect" keyEquivalent="e" id="1025">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1096"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Map" keyEquivalent="f" id="1026">
+                            <menuItem title="Map" identifier="wizmap" keyEquivalent="f" id="1026">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1097"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Genesis" keyEquivalent="g" id="1027">
+                            <menuItem title="Genesis" identifier="wizgenesis" keyEquivalent="g" id="1027">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1098"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Identify" keyEquivalent="i" id="1028">
+                            <menuItem title="Identify" identifier="wizidentify" keyEquivalent="i" id="1028">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1099"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Where" keyEquivalent="o" id="1029">
-                                <modifierMask key="keyEquivalentModifierMask" control="YES"/>
+                            <menuItem title="Where" identifier="wizwhere" id="1029">
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1100"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Level Teleport" keyEquivalent="v" id="1030">
+                            <menuItem title="Level Teleport" identifier="wizlevelport" keyEquivalent="v" id="1030">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1101"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Wish" keyEquivalent="w" id="1031">
+                            <menuItem title="Wish" identifier="wizwish" keyEquivalent="w" id="1031">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1102"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="#LevelChange" id="1032">
+                            <menuItem title="Level Change" identifier="levelchange" id="1032">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="performMenuAction:" target="943" id="1103"/>

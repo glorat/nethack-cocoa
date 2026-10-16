@@ -39,6 +39,7 @@
 + (NhEventQueue *)instance;
 
 - (void)addEvent:(NhEvent *)e;
+- (void)addEvents:(NSArray<NhEvent *> *)list;
 - (void)addKey:(int)k;
 - (void)addEscapeKey;
 - (void)addKeys:(const char *)keys;

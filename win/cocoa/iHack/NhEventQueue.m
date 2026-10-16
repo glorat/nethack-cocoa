@@ -56,6 +56,13 @@ static NhEventQueue *s_eventQueue;
 	[condition unlock];
 }
 
+- (void) addEvents:(NSArray<NhEvent *> *)list {
+	[condition lock];
+	[events addObjectsFromArray:list];
+	[condition signal];
+	[condition unlock];
+}
+
 - (void) addKey:(int)k {
 	[self addEvent:[NhEvent eventWithKeychar:k]];
 }
@@ -110,10 +117,10 @@ static NhEventQueue *s_eventQueue;
 }
 
 - (NhEvent *)peek {
-	if (events.count > 0) {
-		return [events objectAtIndex:0];
-	}
-	return nil;
+	[condition lock];
+	NhEvent *e = events.firstObject;
+	[condition unlock];
+	return e;
 }
 
 @end

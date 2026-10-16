@@ -188,7 +188,7 @@ $(TEST_BINARY): $(TEST_SRC) $(wildcard Tests/*.h) YesNoInput.h YesNoWindowContro
 	@mkdir -p $(@D)
 	cp Tests/Info.plist $(TEST_BUNDLE)/Contents/
 	$(CC) -arch $(shell uname -m) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -fobjc-arc \
-		-bundle -I. -IiHack -ITests -F$(XCTEST_FW) -framework XCTest -framework Cocoa -framework Carbon \
+		-bundle -I. -IiHack -ITests '-DCOCOA_SOURCE_DIR="$(CURDIR)"' -F$(XCTEST_FW) -framework XCTest -framework Cocoa -framework Carbon \
 		-Wl,-rpath,$(XCTEST_FW) $(TEST_SRC) -o $@
 
 $(OBJDIR) $(BUILD):

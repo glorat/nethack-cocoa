@@ -244,37 +244,24 @@ static MainWindowController* instance;
 
 #pragma mark menu actions
 
+// a click runs the item's command by name, so number_pad and bindings can't
+// change it; a shortcut reaches the menu before the map, so it stays a key
 - (void)performMenuAction:(id)sender
 {
-	NSMenuItem * menuItem = sender;
-	NSString * key = [menuItem keyEquivalent];
-	if ( key && [key length] ) {
-		// it has a key equivalent to use
-		char keyEquiv = [key characterAtIndex:0];
-		int modifier = [menuItem keyEquivalentModifierMask];
-		if ( modifier & NSEventModifierFlagControl ) {
-			keyEquiv = toupper(keyEquiv) - 'A' + 1;
-		}
-		if ( modifier & NSEventModifierFlagOption ) {
-			keyEquiv = 0x80 | keyEquiv;
-		}
-		[[NhEventQueue instance] addKey:keyEquiv];
-	} else {
-		// maybe an extended command?
-		NSString * cmd = [menuItem title];
-		if ( [cmd characterAtIndex:0] == '#' ) {
-			cmd = [cmd substringFromIndex:1];
-			cmd = [cmd lowercaseString];
-			NhTextInputEvent * e = [NhTextInputEvent eventWithText:cmd];
-			[[NhEventQueue instance] addKey:'#'];
-			[[NhEventQueue instance] addEvent:e];
-		} else {
-			// unknown
-			NSAlert * alert = [[NSAlert alloc] init];
-			alert.messageText = @"Menu binding not implemented";
-			[alert runModal];		
-		}
+	NSEvent * event = [NSApp currentEvent];
+	if ( event.type == NSEventTypeKeyDown && [event.charactersIgnoringModifiers isEqualToString:[sender keyEquivalent]] ) {
+		int key = [WinCocoa keyWithKeyEvent:event];
+		if ( key )
+			[[NhEventQueue instance] addKey:key];
+		return;
 	}
+	char initiator = extcmd_initiator();
+	if ( !initiator ) {
+		NSBeep();
+		return;
+	}
+	[[NhEventQueue instance] addEvents:@[ [NhEvent eventWithKeychar:initiator],
+										   [NhTextInputEvent eventWithText:[sender identifier]] ]];
 }
 
 - (IBAction)enableAsciiMode:(id)sender
