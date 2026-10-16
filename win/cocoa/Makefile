@@ -4,6 +4,7 @@
 #
 #   make -C win/cocoa          # -> win/cocoa/build/NetHack.app
 #   make -C win/cocoa run
+#   make -C win/cocoa test     # XCTest unit tests for the window port
 #   make -C win/cocoa ARCHFLAGS="-arch arm64 -arch x86_64" VERSION=5.0.1   # release
 
 TOP      := ../..
@@ -83,7 +84,7 @@ DATA := $(TOP)/dat/nhdat $(TOP)/dat/license $(TOP)/dat/symbols sysconf \
 	Credits.rtf $(wildcard Resources/images/*.png) $(BUILD)/tiles16.bmp \
 	Resources/tiles/tiles64.png Resources/tiles/tiles128.png
 
-.PHONY: all app core run clean
+.PHONY: all app core run test clean
 
 all: app
 
@@ -171,6 +172,23 @@ resources: $(DATA) $(CONTENTS)/MacOS/NetHack
 
 run: app
 	$(CONTENTS)/MacOS/NetHack
+
+# Tests build for this Mac only and link just the code under test, not the core
+TEST_BUNDLE := $(BUILD)/CocoaTests.xctest
+TEST_BINARY := $(TEST_BUNDLE)/Contents/MacOS/CocoaTests
+TEST_SRC := $(wildcard Tests/*.m) YesNoInput.m YesNoWindowController.m iHack/NhYnQuestion.m
+XCTEST_FW = $(shell $(if $(DEVELOPER_DIR),DEVELOPER_DIR=$(DEVELOPER_DIR)) xcrun --show-sdk-platform-path)/Developer/Library/Frameworks
+
+test: $(TEST_BINARY)
+	xcrun xctest $(TEST_BUNDLE)
+
+$(TEST_BINARY): $(TEST_SRC) $(wildcard Tests/*.h) YesNoInput.h YesNoWindowController.h \
+	iHack/NhYnQuestion.h Tests/Info.plist | $(BUILD)
+	@mkdir -p $(@D)
+	cp Tests/Info.plist $(TEST_BUNDLE)/Contents/
+	$(CC) -arch $(shell uname -m) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -fobjc-arc \
+		-bundle -I. -IiHack -ITests -F$(XCTEST_FW) -framework XCTest -framework Cocoa \
+		-Wl,-rpath,$(XCTEST_FW) $(TEST_SRC) -o $@
 
 $(OBJDIR) $(BUILD):
 	mkdir -p $@

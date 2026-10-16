@@ -27,14 +27,15 @@
 @interface NhYnQuestion : NSObject {
 	
 	NSString *question;
-	const char *choices;
+	NSString *choices;
 	char def;
 
 }
 
 @property (nonatomic, readonly) NSString *question;
-@property (nonatomic, readonly) const char *choices;
+@property (nonatomic, readonly) NSString *choices;
 @property (nonatomic, readonly) char def;
+@property (nonatomic, assign) long count;
 
 - (id) initWithQuestion:(const char *)q choices:(const char *)ch default:(int)def;
 

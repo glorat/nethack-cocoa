@@ -44,6 +44,9 @@ jobs:
           if [ -n "$VERSION" ]; then args+=(VERSION="$VERSION"); fi
           make -C win/cocoa "${args[@]}"
 
+      - name: Test
+        run: make -C win/cocoa test
+
       - name: Check
         run: |
           app=win/cocoa/build/NetHack.app

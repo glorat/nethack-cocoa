@@ -31,7 +31,7 @@
 - (id) initWithQuestion:(const char *)q choices:(const char *)ch default:(int)d {
 	if (self = [super init]) {
 		question = [[NSString alloc] initWithCString:q encoding:NSASCIIStringEncoding];
-		choices = ch;
+		choices = [[NSString alloc] initWithCString:ch encoding:NSASCIIStringEncoding];
 		def = d;
 	}
 	return self;

@@ -535,80 +535,6 @@ static MainWindowController* instance;
 	}	
 }
 
-- (void)handleDirectionQuestion:(NhYnQuestion *)q {
-	isDirectionQuestion = YES;
-	[directionWindow runModalWithPrompt:q.question];
-}
-
-// Parses the stuff in [] and returns the special characters like $-?* etc.
-// examples:
-// [$abcdf or ?*]
-// [a or ?*]
-// [- ab or ?*]
-// [- or or ?*]
-// [- a or ?*]
-// [- a-cw-z or ?*]
-// [- a-cW-Z or ?*]
-- (void)parseYnChoices:(NSString *)lets specials:(NSString **)specials items:(NSString **)items {
-	char cSpecials[BUFSZ];
-	char cItems[BUFSZ];
-	char *pSpecials = cSpecials;
-	char *pItems = cItems;
-	const char *pStr = [lets cStringUsingEncoding:NSASCIIStringEncoding];
-	enum eState { start, inv, invInterval, end } state = start;
-	char c, lastInv = 0;
-	while ((c = *pStr++)) {
-		switch (state) {
-			case start:
-				if (isalpha(c)) {
-					state = inv;
-					*pItems++ = c;
-				} else if (!isalpha(c)) {
-					if (c == ' ') {
-						state = inv;
-					} else {
-						*pSpecials++ = c;
-					}
-				}
-				break;
-			case inv:
-				if (isalpha(c)) {
-					*pItems++ = c;
-					lastInv = c;
-				} else if (c == ' ') {
-					state = end;
-				} else if (c == '-') {
-					state = invInterval;
-				}
-				break;
-			case invInterval:
-				if (isalpha(c)) {
-					for (char a = lastInv+1; a <= c; ++a) {
-						*pItems++ = a;
-					}
-					state = inv;
-					lastInv = 0;
-				} else {
-					// never lands here
-					state = inv;
-				}
-				break;
-			case end:
-				if (!isalpha(c) && c != ' ') {
-					*pSpecials++ = c;
-				}
-				break;
-			default:
-				break;
-		}
-	}
-	*pSpecials = 0;
-	*pItems = 0;
-	
-	*specials = [NSString stringWithCString:cSpecials encoding:NSASCIIStringEncoding];
-	*items = [NSString stringWithCString:cItems encoding:NSASCIIStringEncoding];
-}
-
 - (void)showDirectionWithPrompt:(NSString *)prompt
 {
 	if (![NSThread isMainThread]) {
@@ -622,49 +548,7 @@ static MainWindowController* instance;
 	if (![NSThread isMainThread]) {
 		[self performSelectorOnMainThread:@selector(showYnQuestion:) withObject:q waitUntilDone:NO];
 	} else {
-		if ([q.question containsString:@"direction"]) {
-			[self handleDirectionQuestion:q];
-		} else if (q.choices) {
-			// simple YN question
-			// "Which ring finger, Right or Left?" "rl"
-			NSString *text = q.question;
-			
-			if (text && text.length > 0) {
-				
-				// trip response options from prompt
-				NSString * response = [text substringBetweenDelimiters:@"[]"];		
-				if ( response ) {
-					response = [NSString stringWithFormat:@"[%@]", response];
-					text = [text stringByReplacingOccurrencesOfString:response withString:@""];
-				}
-				
-				if ( strcmp( q.choices, "yn" ) == 0 || strcmp( q.choices, "ynq" ) == 0 ) {
-					char cancelChar = q.choices[2];
-					[yesNoWindow runModalWithQuestion:text choice1:@"Yes" choice2:@"No" defaultAnswer:q.def onCancelSend:cancelChar];
-				} else if ( strcmp( q.choices, "rl" ) == 0 ) {
-					[yesNoWindow runModalWithQuestion:text choice1:@"Right" choice2:@"Left" defaultAnswer:q.def onCancelSend:0];
-				} else {
-					assert(NO);
-				}
-			}
-		} else {
-			// very general question, could be everything
-			NSString * args = [q.question substringBetweenDelimiters:@"[]"];		
-			NSString * specials = nil;
-			NSString * items = nil;
-			[self parseYnChoices:args specials:&specials items:&items];
-			
-			BOOL questionMark = [args containsString:@"?"];
-			if (questionMark && [items length] > 1) {
-				// ask for a comprehensive list instead
-				[[NhEventQueue instance] addKey:'?'];
-			} else if ( [items length] == 1 ) {
-				// do nothing for only a single arg
-			} else {
-				NSLog(@"unknown question %@", q.question);
-				//assert( NO );
-			}
-		}
+		[YesNoWindowController askQuestion:q];
 	}
 }
 

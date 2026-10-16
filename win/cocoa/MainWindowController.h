@@ -34,7 +34,6 @@
 @class MenuWindowController;
 @class MessageWindowController;
 @class DirectionWindowController;
-@class YesNoWindowController;
 @class InputWindowController;
 @class ExtCommandWindowController;
 @class PlayerSelectionWindowController;
@@ -63,7 +62,6 @@
 	IBOutlet EquipmentView					*	equipmentView;
 	
 	IBOutlet DirectionWindowController		*	directionWindow;
-	IBOutlet YesNoWindowController			*	yesNoWindow;
 	IBOutlet InputWindowController			*	inputWindow;
 	IBOutlet ExtCommandWindowController		*	extCommandWindow;
 	IBOutlet PlayerSelectionWindowController*	showPlayerSelection;
@@ -92,7 +90,6 @@
 - (void)nethackExited;
 
 // window API
-- (void)handleDirectionQuestion:(NhYnQuestion *)q;
 - (void)showYnQuestion:(NhYnQuestion *)q;
 - (void)refreshMessages;
 // gets called when core waits for input

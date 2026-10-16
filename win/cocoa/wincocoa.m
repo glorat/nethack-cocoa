@@ -36,6 +36,7 @@
 #import "NhMapWindow.h"
 #import "MainWindowController.h"
 #import "NhYnQuestion.h"
+#import "YesNoWindowController.h"
 #import "NhEvent.h"
 #import "NhEventQueue.h"
 #import "NhItem.h"
@@ -629,9 +630,11 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 		}
 	}
 	
+	yn_number = 0;
 	NSString * text = [NSString stringWithFormat:@"%s", question];
 	if ( choices && choices[0] ) {
-		text = [text stringByAppendingFormat:@" [%s]", choices];
+		NSString * shown = [[NSString stringWithCString:choices encoding:NSASCIIStringEncoding] componentsSeparatedByString:@"\033"].firstObject;
+		text = [text stringByAppendingFormat:@" [%@]", shown];
 	}
 	if ( def ) {
 		text = [text stringByAppendingFormat:@" (%c)", def];
@@ -643,20 +646,19 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 		return e.key;
 	}
 	
-	if ( choices ) {
-		static const char * yesNo[] = {
-			"yn",
-			"ynq",
-			"rl",
-		};
-		for ( int i = 0; i < sizeof yesNo/sizeof yesNo[0]; ++i ) {
-			if ( strcmp( choices, yesNo[i] ) == 0 ) {
-				NhYnQuestion * q = [[NhYnQuestion alloc] initWithQuestion:question choices:choices default:def];
-				[[MainWindowController instance] showYnQuestion:q];
-				NhEvent * e = [[NhEventQueue instance] nextEvent];
-				return e.key;
-			}
+	if ( [YesNoWindowController canAskWithChoices:choices] ) {
+		NhYnQuestion * q = [[NhYnQuestion alloc] initWithQuestion:question choices:choices default:def];
+		[[MainWindowController instance] showYnQuestion:q];
+		char key = [[NhEventQueue instance] nextEvent].key;
+		char answer[QBUFSZ];
+		if ( key == '#' ) {
+			yn_number = q.count;
+			Sprintf(answer, "#%ld", yn_number);
+		} else {
+			(void) key2txt((uchar) key, answer);
 		}
+		cocoa_putstr(WIN_MESSAGE, 0, [[text stringByAppendingFormat:@" %s", answer] UTF8String]);
+		return key;
 	}
 	
 	cocoa_putstr(WIN_MESSAGE, ATR_BOLD, [text UTF8String] );

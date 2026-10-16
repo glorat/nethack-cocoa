@@ -33,7 +33,6 @@
                 <outlet property="statsView" destination="1383" id="1476"/>
                 <outlet property="tileSetMenu" destination="1114" id="1119"/>
                 <outlet property="window" destination="371" id="953"/>
-                <outlet property="yesNoWindow" destination="885" id="954"/>
             </connections>
         </customObject>
         <window title="NetHack" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" frameAutosaveName="MainWindowPosition" animationBehavior="default" id="371" userLabel="Main Window">
@@ -1897,69 +1896,6 @@ Gw
                 <outlet property="initialFirstResponder" destination="907" id="917"/>
             </connections>
             <point key="canvasLocation" x="-775" y="-704"/>
-        </window>
-        <customObject id="885" customClass="YesNoWindowController">
-            <connections>
-                <outlet property="button1" destination="887" id="891"/>
-                <outlet property="button2" destination="889" id="892"/>
-                <outlet property="question" destination="898" id="900"/>
-                <outlet property="window" destination="881" id="896"/>
-            </connections>
-        </customObject>
-        <window allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="YesNoWindowPosition" animationBehavior="default" id="881" userLabel="Yes No Window" customClass="NSPanel">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" utility="YES"/>
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="162" y="364" width="400" height="115"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1728" height="1079"/>
-            <view key="contentView" id="882">
-                <rect key="frame" x="0.0" y="0.0" width="400" height="115"/>
-                <autoresizingMask key="autoresizingMask"/>
-                <subviews>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="887">
-                        <rect key="frame" x="239" y="12" width="75" height="32"/>
-                        <buttonCell key="cell" type="push" title="Button" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="888">
-                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
-                        </buttonCell>
-                        <connections>
-                            <action selector="performButton:" target="885" id="894"/>
-                        </connections>
-                    </button>
-                    <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="889">
-                        <rect key="frame" x="312" y="12" width="75" height="32"/>
-                        <buttonCell key="cell" type="push" title="Button" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="890">
-                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system"/>
-                        </buttonCell>
-                        <connections>
-                            <action selector="performButton:" target="885" id="893"/>
-                        </connections>
-                    </button>
-                    <textField focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" preferredMaxLayoutWidth="362" translatesAutoresizingMaskIntoConstraints="NO" id="898">
-                        <rect key="frame" x="17" y="78" width="366" height="16"/>
-                        <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Multiline Label" id="899">
-                            <font key="font" metaFont="system"/>
-                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
-                </subviews>
-                <constraints>
-                    <constraint firstItem="887" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="882" secondAttribute="leading" constant="20" id="2pE-3f-Jra"/>
-                    <constraint firstAttribute="trailing" secondItem="889" secondAttribute="trailing" constant="20" symbolic="YES" id="4IH-gT-GF1"/>
-                    <constraint firstItem="898" firstAttribute="leading" secondItem="882" secondAttribute="leading" constant="19" id="7xF-fa-6jh"/>
-                    <constraint firstItem="887" firstAttribute="top" secondItem="898" secondAttribute="bottom" constant="39" id="ASy-lJ-4gZ"/>
-                    <constraint firstAttribute="bottom" secondItem="889" secondAttribute="bottom" constant="19" id="JBY-s1-dtF"/>
-                    <constraint firstItem="887" firstAttribute="centerY" secondItem="889" secondAttribute="centerY" id="O7R-IQ-65b"/>
-                    <constraint firstItem="898" firstAttribute="top" secondItem="882" secondAttribute="top" constant="21" id="YnR-Ml-J54"/>
-                    <constraint firstItem="889" firstAttribute="leading" secondItem="887" secondAttribute="trailing" constant="12" symbolic="YES" id="cFE-CI-XBX"/>
-                    <constraint firstAttribute="trailing" secondItem="898" secondAttribute="trailing" constant="19" id="eUw-cR-OEE"/>
-                </constraints>
-            </view>
-            <connections>
-                <outlet property="delegate" destination="885" id="895"/>
-            </connections>
-            <point key="canvasLocation" x="-625" y="-489"/>
         </window>
         <customObject id="1165" customClass="PlayerSelectionWindowController">
             <connections>

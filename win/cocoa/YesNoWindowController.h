@@ -23,18 +23,12 @@
  */
 
 #import <Cocoa/Cocoa.h>
-#import "Protocols.h"
 
+@class NhYnQuestion;
 
-@interface YesNoWindowController : NSWindowController <NSWindowDelegate> {
-	IBOutlet NSTextField *	question;
-	IBOutlet NSButton	*	button1;
-	IBOutlet NSButton	*	button2;
-	char					defaultAnswer;
-	char					onCancelChar;
-}
+@interface YesNoWindowController : NSWindowController <NSWindowDelegate>
 
--(void)runModalWithQuestion:(NSString *)prompt choice1:(NSString *)choice1 choice2:(NSString *)choice2 defaultAnswer:(char)def onCancelSend:(char)cancelChar;
--(IBAction)performButton:(id)sender;
++(BOOL)canAskWithChoices:(const char *)choices;
++(void)askQuestion:(NhYnQuestion *)question;
 
 @end
