@@ -45,6 +45,7 @@
 #import "NhStatusWindow.h"
 #import "NSString+Z.h"
 #import "NhTextInputEvent.h"
+#import "PlayerName.h"
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
@@ -252,7 +253,13 @@ void cocoa_init_nhwindows(int* argc, char** argv)
 void cocoa_askname(void)
 {
 	//NSLog(@"askname");
-	cocoa_getlin("Enter your name", svp.plname);
+	char typed[BUFSZ];
+	for ( int tries = 0; tries < 10; ++tries ) {
+		cocoa_getlin(tries ? "Enter a name for your character. Who are you?" : "Who are you?", typed);
+		if ( NhPlayerName(typed, svp.plname, sizeof svp.plname) )
+			return;
+	}
+	nh_terminate(EXIT_SUCCESS);
 }
 
 void cocoa_get_nh_event()

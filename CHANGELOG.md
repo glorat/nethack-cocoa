@@ -11,6 +11,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - The extended command prompt (`#`) works as in the terminal: type a command's name and press Return.
 - Menu bar commands do what they say.
 - Questions you type an answer to, such as wishes and names, open on the game window and work as in the terminal.
+- The name you enter for a new character follows the same rules as in the terminal.
 - The menu bar is reorganised into clearer groups.
 - Many painted tiles are redrawn closer to the classic tiles, including sizes, engravings and unidentified items.
 - Walls fill their whole square, so there's no dark gap between a wall and the room beside it.
