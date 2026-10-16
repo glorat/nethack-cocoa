@@ -84,7 +84,9 @@
 	if ( [theEvent type] == NSEventTypeKeyDown ) {
 		int key = [WinCocoa keyWithKeyEvent:theEvent];
 		if ( key ) {
-			[[NhEventQueue instance] addKey:key];
+			// a dismiss key passed on would answer the game's next prompt
+			if ( key != '\r' && key != '\n' && key != 3 && key != ' ' && key != 27 )
+				[[NhEventQueue instance] addKey:key];
 			[[self window] close];
 			return;
 		}
