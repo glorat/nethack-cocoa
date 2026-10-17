@@ -38,8 +38,9 @@ NHDEFS := -DNOTPARMDECL -DDLB -DSYSCF -DSYSCF_FILE=\"sysconf\" -DNOMAIL \
           -DNOTTYGRAPHICS -DCOCOA_GRAPHICS -DTILES_IN_GLYPHMAP \
           -DDEFAULT_WINDOW_SYS=\"cocoa\" -DGREPPATH=\"/usr/bin/grep\"
 
+# -MMD writes each object's header dependencies beside it, read back below
 COMMONFLAGS := -g -O1 $(ARCHFLAGS) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) \
-               -I. -IiHack -I$(TOP)/include $(NHDEFS)
+               -I. -IiHack -I$(TOP)/include $(NHDEFS) -MMD -MP
 CFLAGS   := $(COMMONFLAGS) -std=c99 -w
 OBJCFLAGS := $(COMMONFLAGS) -fobjc-arc -Wno-deprecated-declarations \
              -include NetHackCocoa_Prefix.pch
@@ -197,9 +198,7 @@ $(TEST_BINARY): $(TEST_SRC) $(wildcard Tests/*.h) YesNoInput.h YesNoWindowContro
 UITEST_APP := $(BUILD)/NetHackUITest.app
 UITEST_CONTENTS := $(UITEST_APP)/Contents
 
-$(OBJDIR)/uitest/TestDriver.o: UITests/TestDriver.m MainWindowController.h MainView.h NetHackCocoaAppDelegate.h \
-	NhTextStyle.h iHack/NhEventQueue.h iHack/NhWindow.h iHack/NhMapWindow.h iHack/NhStatus.h iHack/NhItem.h \
-	iHack/TileSet.h | $(OBJDIR) core
+$(OBJDIR)/uitest/TestDriver.o: UITests/TestDriver.m | $(OBJDIR) core
 	@mkdir -p $(@D)
 	$(CC) $(OBJCFLAGS) -c $< -o $@
 
@@ -218,6 +217,8 @@ uitest: uitest-app
 
 $(OBJDIR) $(BUILD):
 	mkdir -p $@
+
+-include $(OBJS:.o=.d) $(OBJDIR)/uitest/TestDriver.d
 
 clean:
 	rm -rf $(BUILD)
