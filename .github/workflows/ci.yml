@@ -63,7 +63,8 @@ jobs:
         run: |
           if [ -n "$VERSION" ]; then label="$VERSION-$BUILD_NUMBER"; else label="dev-${GITHUB_SHA:0:7}"; fi
           zip="NetHack-$label-macOS.zip"
-          ditto -c -k --keepParent win/cocoa/build/NetHack.app "$zip"
+          ditto win/cocoa/build/NetHack.app "stage/NetHack 5.app"
+          ditto -c -k --keepParent "stage/NetHack 5.app" "$zip"
           echo "zip=$zip" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v7

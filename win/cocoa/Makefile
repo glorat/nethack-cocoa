@@ -154,7 +154,7 @@ $(CONTENTS)/Info.plist: NetHack-Info.plist
 	@mkdir -p $(@D)
 	sed -e 's/\$${EXECUTABLE_NAME}/NetHack/' \
 	    -e 's/\$$(PRODUCT_BUNDLE_IDENTIFIER)/io.github.glorat.nethack/' \
-	    -e 's/\$${PRODUCT_NAME}/NetHack/' \
+	    -e 's/\$${PRODUCT_NAME}/NetHack 5/' \
 	    -e 's/\$$(PRODUCT_BUNDLE_PACKAGE_TYPE)/APPL/' \
 	    -e 's/\$$(MARKETING_VERSION)/$(VERSION)/' \
 	    -e 's/\$$(CURRENT_PROJECT_VERSION)/$(BUILD_NUMBER)/' \

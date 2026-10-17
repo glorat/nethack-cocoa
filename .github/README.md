@@ -32,9 +32,9 @@ A native Mac app for [NetHack 5.0](https://www.nethack.org/), the classic roguel
 Requires macOS 12 or later.
 
 1. Download the zip from the [latest release](https://github.com/glorat/nethack-cocoa/releases/latest) and open it.
-2. Drag **NetHack** into your Applications folder.
-3. Open NetHack. macOS will say it can't check the app for malicious software, because this free, open-source build isn't notarized by Apple. Click **Done**.
-4. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the message about NetHack.
+2. Drag **NetHack 5** into your Applications folder.
+3. Open NetHack 5. macOS will say it can't check the app for malicious software, because this free, open-source build isn't notarized by Apple. Click **Done**.
+4. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the message about NetHack 5.
 
 You only need to do this once.
 

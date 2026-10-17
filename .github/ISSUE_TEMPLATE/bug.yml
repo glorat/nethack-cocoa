@@ -13,7 +13,7 @@ body:
     id: version
     attributes:
       label: App version
-      description: From NetHack → About NetHack, e.g. 5.0.0 (3).
+      description: From NetHack 5 → About NetHack 5, e.g. 5.0.0 (3).
     validations:
       required: true
   - type: input

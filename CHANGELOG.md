@@ -4,6 +4,10 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 
 ## Unreleased
 
+### Changed
+
+- The app is now called NetHack 5.
+
 ### Fixed
 
 - The Wearing panel is an even grid, with worn items drawn at full size.
@@ -34,7 +38,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 
 ## 5.0.0-2 (2026-10-15)
 
-- The app is now called NetHack and has a new bundle ID, `io.github.glorat.nethack`. Saved games, scores and settings from release 5.0.0-1 don't carry over. To keep your saved games and scores, open NetHack 5.0.0-2 once, quit it, then copy the `nethackdir` folder (and `.nethackrc`, if you have one) from `~/Library/Containers/net.hack.cocoa.NetHack5/Data` to `~/Library/Containers/io.github.glorat.nethack/Data`, replacing what's there.
+- The app is now called NetHack and has a new bundle ID, `io.github.glorat.nethack`.
 - The About box, privacy policy and links now point to this project.
 
 ## 5.0.0-1 (2026-10-15)
