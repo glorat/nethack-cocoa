@@ -80,6 +80,7 @@ static const CGFloat kBadgePadding = 6.0;
 @implementation StatsView
 {
 	NSStackView	*	badges;
+	NSMutableDictionary<NSNumber *, NSTextField *> *	changeMarks;
 }
 
 
@@ -130,6 +131,28 @@ static const CGFloat kBadgePadding = 6.0;
 	]];
 	// keeps its place in the layout for the badges
 	state.hidden = YES;
+
+	changeMarks = [NSMutableDictionary dictionary];
+}
+
+// drawn in the gap after the value so the grid columns don't shift
+-(void)showChange:(int)change improved:(BOOL)improved forField:(int)field after:(NSTextField *)value
+{
+	NSTextField * mark = changeMarks[@(field)];
+	if ( !mark && change ) {
+		mark = [NSTextField labelWithString:@""];
+		mark.font = [NSFont boldSystemFontOfSize:[NSFont smallSystemFontSize]];
+		mark.translatesAutoresizingMaskIntoConstraints = NO;
+		[self addSubview:mark];
+		[NSLayoutConstraint activateConstraints:@[
+			[mark.leadingAnchor constraintEqualToAnchor:value.trailingAnchor constant:1],
+			[mark.firstBaselineAnchor constraintEqualToAnchor:value.firstBaselineAnchor],
+		]];
+		changeMarks[@(field)] = mark;
+	}
+	mark.hidden = change == 0;
+	mark.stringValue = change > 0 ? @"↑" : @"↓";
+	mark.textColor = improved ? [NSColor systemGreenColor] : [NSColor systemRedColor];
 }
 
 static void SetMeter(NSLevelIndicator * meter, int current, int maximum)
@@ -174,6 +197,16 @@ static void SetMeter(NSLevelIndicator * meter, int current, int maximum)
 	[wis setStringValue:value(BL_WI)];
 	[cha setStringValue:value(BL_CH)];
 	[turn setStringValue:value(BL_TIME)];
+	NSDictionary<NSNumber *, NSTextField *> * values = @{
+		@(BL_STR) : str, @(BL_DX) : dex, @(BL_CO) : con, @(BL_IN) : iq, @(BL_WI) : wis, @(BL_CH) : cha,
+		@(BL_AC) : ac, @(BL_XP) : level, @(BL_HD) : xp,
+	};
+	for ( NSNumber * field in values ) {
+		BOOL improved = NO;
+		int change = [status changeForField:field.intValue improved:&improved];
+		[self showChange:change improved:improved forField:field.intValue after:values[field]];
+	}
+
 	for ( NSView * view in badges.arrangedSubviews )
 		[view removeFromSuperview];
 	for ( NhStatusBadge * badge in status.badges )

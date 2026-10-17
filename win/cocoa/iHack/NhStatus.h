@@ -32,4 +32,11 @@ typedef NS_ENUM(NSInteger, NhSeverity) {
 @property (nonatomic, copy) NSString * roleText;
 @property (nonatomic, copy) NSArray<NhStatusBadge *> * badges;
 
+// the turn the status describes; a change is shown for a few turns after it
+@property (nonatomic, assign) long turn;
+// change is the core's direction: 1 for up, -1 for down
+- (void)noteChange:(int)change improved:(BOOL)improved forField:(int)field;
+// 0 once the change has been shown long enough
+- (int)changeForField:(int)field improved:(BOOL *)improved;
+
 @end

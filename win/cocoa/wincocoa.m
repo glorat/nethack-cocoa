@@ -561,10 +561,13 @@ void cocoa_update_inventory(int arg)
 #pragma mark status
 
 static NhStatus * s_status;
+// starting gear changes AC and stats before the first turn
+static BOOL s_showChanges;
 
 void cocoa_status_init(void)
 {
 	s_status = [[NhStatus alloc] init];
+	s_showChanges = NO;
 }
 
 void cocoa_status_finish(void)
@@ -637,11 +640,14 @@ void cocoa_status_update(int fld, genericptr_t ptr, int chg, int percent, int co
 	static unsigned long s_conditions;
 	NSCharacterSet * whitespace = [NSCharacterSet whitespaceCharacterSet];
 
+	s_status.turn = svm.moves;
 	if ( fld == BL_FLUSH || fld == BL_RESET ) {
 		s_status.levelText = LevelText([s_status valueForField:BL_LEVELDESC] ?: @"");
 		s_status.roleText = RoleText([s_status valueForField:BL_ALIGN]);
 		s_status.badges = StatusBadges([s_status valueForField:BL_HUNGER], [s_status valueForField:BL_CAP], s_conditions);
 		[[MainWindowController instance] updateStatus:[s_status copy]];
+		if ( program_state.in_moveloop )
+			s_showChanges = YES;
 		return;
 	}
 	if ( fld < 0 || fld >= MAXBLSTATS || !ptr )
@@ -655,6 +661,18 @@ void cocoa_status_update(int fld, genericptr_t ptr, int chg, int percent, int co
 	if ( fld == BL_GOLD )
 		value = [value componentsSeparatedByString:@":"].lastObject;
 	[s_status setValue:value forField:fld];
+
+	switch ( fld ) {
+		case BL_STR: case BL_DX: case BL_CO: case BL_IN: case BL_WI: case BL_CH:
+		case BL_XP: case BL_HD:
+			if ( s_showChanges && chg )
+				[s_status noteChange:chg improved:chg > 0 forField:fld];
+			break;
+		case BL_AC:
+			if ( s_showChanges && chg )
+				[s_status noteChange:chg improved:chg < 0 forField:fld];
+			break;
+	}
 }
 
 void cocoa_mark_synch()

@@ -17,10 +17,23 @@
 
 @end
 
+// matches the core's default for statushilites
+static const long kChangeTurns = 3;
+
+@interface NhStatusChange : NSObject
+@property (nonatomic, assign) int change;
+@property (nonatomic, assign) BOOL improved;
+@property (nonatomic, assign) long turn;
+@end
+
+@implementation NhStatusChange
+@end
+
 @implementation NhStatus
 {
 	NSMutableDictionary<NSNumber *, NSString *> *	values;
 	NSMutableIndexSet *	enabled;
+	NSMutableDictionary<NSNumber *, NhStatusChange *> *	changes;
 }
 
 - (instancetype)init
@@ -28,6 +41,7 @@
 	if ( self = [super init] ) {
 		values = [NSMutableDictionary dictionary];
 		enabled = [NSMutableIndexSet indexSet];
+		changes = [NSMutableDictionary dictionary];
 	}
 	return self;
 }
@@ -37,6 +51,8 @@
 	NhStatus * copy = [[NhStatus alloc] init];
 	copy->values = [values mutableCopy];
 	copy->enabled = [enabled mutableCopy];
+	copy->changes = [changes mutableCopy];
+	copy.turn = self.turn;
 	copy.levelText = self.levelText;
 	copy.roleText = self.roleText;
 	copy.badges = self.badges;
@@ -51,6 +67,25 @@
 - (NSString *)valueForField:(int)field
 {
 	return [enabled containsIndex:field] ? values[@(field)] : nil;
+}
+
+- (void)noteChange:(int)change improved:(BOOL)improved forField:(int)field
+{
+	NhStatusChange * noted = [[NhStatusChange alloc] init];
+	noted.change = change;
+	noted.improved = improved;
+	noted.turn = self.turn;
+	changes[@(field)] = noted;
+}
+
+- (int)changeForField:(int)field improved:(BOOL *)improved
+{
+	NhStatusChange * noted = changes[@(field)];
+	if ( !noted || self.turn - noted.turn >= kChangeTurns || ![enabled containsIndex:field] )
+		return 0;
+	if ( improved )
+		*improved = noted.improved;
+	return noted.change;
 }
 
 - (void)setEnabled:(BOOL)enable forField:(int)field
