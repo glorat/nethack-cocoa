@@ -86,9 +86,9 @@ type d
 pick garlic
 type d
 pick wolfsbane
-toward floor of a room
+step floor of a room
 check status.turn == 6
-toward sprig of wolfsbane
+step sprig of wolfsbane
 check dialog contains Things that are here
 check status.turn == 6
 key escape

@@ -7,7 +7,7 @@ type d
 pick garlic
 type d
 pick wolfsbane
-toward floor of a room
+step floor of a room
 check map.with.pile contains sprig of wolfsbane
 
 # A peaceful monster is marked until it is angered
