@@ -293,6 +293,14 @@ static const CGFloat kMinWindowWidth = 637;
 
 -(void)windowWillClose:(NSNotification *)notification
 {
+	[self savePreferences];
+
+	// if window closes then application needs to terminate
+	[self terminateApplication:nil];
+}
+
+- (void)savePreferences
+{
 	// save tile set preferences
 	[[NSUserDefaults standardUserDefaults] setObject:_tileSetName forKey:@"TileSetName"];
 	NSFont * font = [mainView asciiFont];
@@ -306,9 +314,6 @@ static const CGFloat kMinWindowWidth = 637;
 	// save user defined tile sets
 	[[NSUserDefaults standardUserDefaults] setObject:userTiles forKey:@"UserTileSets"];
 	[[NSUserDefaults standardUserDefaults] synchronize];
-	
-	// if window closes then application needs to terminate
-	[self terminateApplication:nil];
 }
 
 - (void)setTerminatedByUser:(BOOL)byUser
@@ -325,9 +330,45 @@ static const CGFloat kMinWindowWidth = 637;
 		if ( terminatedByUser ) {
 			[self.window close];
 		} else {
-			// nethack exited, but let user close the app manually 
+			[self showGameOver];
 		}
 	}		
+}
+
+- (void)showGameOver
+{
+	NSAlert * alert = [[NSAlert alloc] init];
+	alert.messageText = @"The game is over";
+	alert.informativeText = @"Start a new game, or quit NetHack.";
+	[alert addButtonWithTitle:@"New Game"];
+	[alert addButtonWithTitle:@"Quit"].keyEquivalent = @"\033";
+	[alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
+		if ( response == NSAlertFirstButtonReturn )
+			[self relaunch];
+		else
+			[self.window close];
+	}];
+}
+
+// the core can't be restarted in-process, so a new game is a fresh instance
+- (void)relaunch
+{
+	// the new instance reads these at launch, before this one has closed its window
+	[self savePreferences];
+
+	// the sandbox drops a configured environment, so NETHACKOPTIONS doesn't carry over
+	NSWorkspaceOpenConfiguration * config = [NSWorkspaceOpenConfiguration configuration];
+	config.createsNewApplicationInstance = YES;
+	[[NSWorkspace sharedWorkspace] openApplicationAtURL:[[NSBundle mainBundle] bundleURL] configuration:config completionHandler:^(NSRunningApplication * app, NSError * error) {
+		dispatch_async(dispatch_get_main_queue(), ^{
+			if ( error ) {
+				[self.window presentError:error];
+				[self showGameOver];
+			} else {
+				[self.window close];
+			}
+		});
+	}];
 }
 
 

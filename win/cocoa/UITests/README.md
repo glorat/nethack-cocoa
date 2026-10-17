@@ -80,7 +80,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `status.<field>` | `name role dlvl hp pw level xplabel xp ac gold str dex con int wis cha turn` as shown |
 | `status.badges` | e.g. `Burdened:caution Stone:danger` (severities `info caution warning danger`) |
 | `status.mark.<field>` / `status.marks` | Change arrows: `up worse`, `down better`; all of them as `ac:up worse ...` |
-| `dialog` / `dialog.kind` | All text in the open dialog / `Menu YesNo Direction Input ExtCommand Message` or `none` |
+| `dialog` / `dialog.kind` | All text in the open dialog / `Menu YesNo Direction Input ExtCommand Message Alert` or `none` |
 | `menu.letters`, `menu.<letter>`, `menu.@<text>`, `.style` | Rows of the open menu; style is a colour name (`default green red ...`) plus `bold`, `underline`, `background` |
 | `menu.headings`, `menu.headings.style`, `menu.question` | Headings, their styles, and whether the menu is shown as answer buttons |
 | `sidebar.letters`, `sidebar.<letter>`, `sidebar.@<text>`, `.style`, `sidebar.headings[.style]` | The inventory sidebar, the same way |

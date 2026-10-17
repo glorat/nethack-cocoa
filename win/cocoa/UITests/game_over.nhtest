@@ -1,0 +1,12 @@
+# When a game ends, a sheet offers a new game or quitting, and Escape quits.
+@options role:Priest,race:human,gender:female,align:neutral,pettype:none
+
+type #
+enter quit
+type y
+type q
+check dialog.kind == Alert
+check dialog contains The game is over
+check dialog contains New Game
+key escape
+expect-exit

@@ -687,8 +687,11 @@ static NSArray<NSString *> * WearingSlots(void)
 		NSWindow * w = [self dialogWindow];
 		if ( !w )
 			return @"none";
-		if ( [key isEqualToString:@"dialog.kind"] )
+		if ( [key isEqualToString:@"dialog.kind"] ) {
+			if ( !w.windowController )
+				return @"Alert";
 			return [NSStringFromClass([w.windowController class]) stringByReplacingOccurrencesOfString:@"WindowController" withString:@""];
+		}
 		NSMutableArray * texts = [NSMutableArray array];
 		if ( w.title.length )
 			[texts addObject:w.title];
