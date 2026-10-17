@@ -7175,6 +7175,9 @@ initoptions_init(void)
     flags.pile_limit = PILE_LIMIT_DFLT;  /* 5 */
     flags.runmode = RUN_LEAP;
     iflags.msg_history = 20;
+#ifdef COCOA_GRAPHICS
+    iflags.force_invmenu = TRUE;
+#endif
 
     /* msg_window has conflicting defaults for multi-interface binary */
 #ifdef TTY_GRAPHICS

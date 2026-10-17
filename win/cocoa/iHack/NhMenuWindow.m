@@ -74,6 +74,7 @@
 	currentItemGroup = nil;
 	itemGroups = [[NSMutableArray alloc] init];
 	selected = [[NSMutableArray alloc] init];
+	self.unlistedItems = nil;
 }
 
 -(char)runModal

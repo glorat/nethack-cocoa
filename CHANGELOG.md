@@ -2,6 +2,12 @@
 
 Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [release notes](https://www.nethack.org/).
 
+## Unreleased
+
+### Changed
+
+- Commands like wield and quaff show a menu of suitable items, and typing any item's letter still works.
+
 ## 5.0.0-4 (2026-10-17)
 
 ### Changed

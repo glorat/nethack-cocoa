@@ -428,12 +428,40 @@ void cocoa_end_menu(winid wid, const char *prompt)
 	}
 }
 
+// With force_invmenu the item prompt offers only likely items, but at the
+// old text prompt any inventory letter could be typed; keep allowing that.
+static NSArray<NhItem *> * UnlistedInventory(NhMenuWindow * win)
+{
+	NSMutableSet<NSNumber *> * listed = [NSMutableSet set];
+	BOOL isItemPrompt = NO;
+	for ( NhItemGroup * g in win.itemGroups ) {
+		for ( NhItem * item in g.items ) {
+			[listed addObject:@(item.inventoryLetter)];
+			if ( item.identifier.a_char == '*' && [item.title hasPrefix:@"(list everything)"] )
+				isItemPrompt = YES;
+		}
+	}
+	if ( !isItemPrompt )
+		return nil;
+	NSMutableArray * unlisted = [NSMutableArray array];
+	for ( struct obj * otmp = gi.invent; otmp; otmp = otmp->nobj ) {
+		if ( [listed containsObject:@(otmp->invlet)] )
+			continue;
+		anything any = cg.zeroany;
+		any.a_char = otmp->invlet;
+		[unlisted addObject:[[NhItem alloc] initWithTitle:[NSString stringWithFormat:@"%c", otmp->invlet] identifier:any accelerator:otmp->invlet group_accel:0 glyph:NO_GLYPH selected:NO]];
+	}
+	return unlisted;
+}
+
 int cocoa_select_menu(winid wid, int how, menu_item **selected)
 {
 	//NSLog(@"select_menu %x", wid);
 	NhMenuWindow * win = (NhMenuWindow *) g_WindowDict[@(wid)];
 
 	win.how = how;
+	if ( how == PICK_ONE )
+		win.unlistedItems = UnlistedInventory(win);
 	// pick menus wait for their answer in nextEvent; PICK_NONE has none to wait for
 	win.blocking = (how == PICK_NONE);
 	*selected = NULL;

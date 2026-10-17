@@ -46,6 +46,8 @@
 @property (nonatomic, assign) int how;
 @property (nonatomic, readonly) NSMutableArray *selected;
 @property (nonatomic, copy) NSString *prompt;
+// pickable by letter though not shown
+@property (nonatomic, strong) NSArray<NhItem *> *unlistedItems;
 
 - (void) addItemGroup:(NhItemGroup *)g;
 - (NhItem *)itemAtIndexPath:(NSIndexPath *)indexPath;

@@ -793,6 +793,10 @@ static NSString * SortKey( NSString * title )
 		if ( row.item && row.item.inventoryLetter == c )
 			return row.item;
 	}
+	for ( NhItem * item in menuParams.unlistedItems ) {
+		if ( item.inventoryLetter == c )
+			return item;
+	}
 	return nil;
 }
 
@@ -883,6 +887,10 @@ static NSString * SortKey( NSString * title )
 			row.item.selected = YES;
 			[menuParams.selected addObject:row.item];
 		}
+	}
+	for ( NhItem * item in menuParams.unlistedItems ) {
+		if ( [checked containsObject:item] )
+			[menuParams.selected addObject:item];
 	}
 	if ( how != PICK_NONE )
 		[[NhEventQueue instance] addKey:(int)menuParams.selected.count];
