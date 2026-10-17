@@ -33,6 +33,8 @@
 	NSMutableArray *events;
 	NSCondition *condition;
 	NetHackCocoaAppDelegate * appDelegate;
+	BOOL waitingForEvent;
+	int waitingOnWindow;
 
 }
 
@@ -49,5 +51,8 @@
 
 // non-blocking
 - (NhEvent *)peek;
+
+- (BOOL)gameIsWaiting;
+- (void)gameWaitsOnWindow:(BOOL)waits;
 
 @end

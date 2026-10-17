@@ -635,6 +635,16 @@ static const CGFloat kMinWindowWidth = 637;
 	}
 }
 
+// counted only around the modal window itself: other blocking hand-offs return at once
+static void WhileGameWaits(BOOL gameBlocked, void (^runModal)(void))
+{
+	if ( gameBlocked )
+		[[NhEventQueue instance] gameWaitsOnWindow:YES];
+	runModal();
+	if ( gameBlocked )
+		[[NhEventQueue instance] gameWaitsOnWindow:NO];
+}
+
 - (void)showPlayerSelection
 {
 	if (![NSThread isMainThread]) {
@@ -642,7 +652,7 @@ static const CGFloat kMinWindowWidth = 637;
 		[self performSelectorOnMainThread:@selector(showPlayerSelection) withObject:nil waitUntilDone:YES];
 		[self.appDelegate lockNethackCore];
 	} else {
-		[showPlayerSelection runModal];
+		WhileGameWaits(YES, ^{ [showPlayerSelection runModal]; });
 	}	
 }
 
@@ -700,7 +710,7 @@ static const CGFloat kMinWindowWidth = 637;
 		} else {
 			NSString * text = [w text];
 			if ( [text length] ) {
-				[MessageWindowController messageWindowWithText:text];
+				WhileGameWaits(w.blocking, ^{ [MessageWindowController messageWindowWithText:text]; });
 			}
 		}
 	}
@@ -713,7 +723,7 @@ static const CGFloat kMinWindowWidth = 637;
 		[self performSelectorOnMainThread:@selector(showMenuWindow:) withObject:w waitUntilDone:blocking];
 		[self.appDelegate lockNethackCore];
 	} else {
-		[MenuWindowController menuWindowWithMenu:w];
+		WhileGameWaits(w.blocking, ^{ [MenuWindowController menuWindowWithMenu:w]; });
 	}
 }
 

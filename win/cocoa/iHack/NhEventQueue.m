@@ -88,8 +88,10 @@ static NhEventQueue *s_eventQueue;
 	
 	[condition lock];
 	while (events.count == 0) {
+		waitingForEvent = YES;
 		[condition wait];
 	}
+	waitingForEvent = NO;
 	NhEvent *e = [events objectAtIndex:0];
 	[events removeObjectAtIndex:0];
 	[condition unlock];
@@ -105,8 +107,10 @@ static NhEventQueue *s_eventQueue;
 	
 	[condition lock];
 	while (events.count == 0) {
+		waitingForEvent = YES;
 		[condition wait];
 	}
+	waitingForEvent = NO;
 	[condition unlock];
 	
 	[appDelegate lockNethackCore];
@@ -114,6 +118,19 @@ static NhEventQueue *s_eventQueue;
 
 - (void) addCommand:(NhCommand *)cmd {
 	[self addKeys:cmd.keys];
+}
+
+- (BOOL)gameIsWaiting {
+	[condition lock];
+	BOOL waiting = (waitingForEvent && events.count == 0) || waitingOnWindow > 0;
+	[condition unlock];
+	return waiting;
+}
+
+- (void)gameWaitsOnWindow:(BOOL)waits {
+	[condition lock];
+	waitingOnWindow += waits ? 1 : -1;
+	[condition unlock];
 }
 
 - (NhEvent *)peek {

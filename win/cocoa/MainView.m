@@ -260,18 +260,39 @@ static void DrawBadge(NSBezierPath * path, NSColor * fill)
 	[path stroke];
 }
 
-- (void)drawMarksForFlags:(unsigned)flags inRect:(NSRect)r
+- (MapMarks)marksAtX:(int)x y:(int)y
 {
-	if ( !iflags.use_inverse )
-		flags &= ~MG_DETECT;
-	if ( !iflags.hilite_pile )
-		flags &= ~MG_OBJPILE;
-	if ( !(flags & (MG_DETECT | MG_OBJPILE | MG_RIDDEN | kMapPeaceful)) )
+	NhMapWindow * map = (NhMapWindow *) [NhWindow mapWindow];
+	int glyph = [map glyphAtX:x y:y];
+	return glyph == kNoGlyph ? 0 : [self marksForGlyph:glyph flags:[map flagsAtX:x y:y]];
+}
+
+- (MapMarks)marksForGlyph:(int)glyph flags:(unsigned)flags
+{
+	MapMarks marks = 0;
+	if ( glyph_is_pet(glyph) && iflags.hilite_pet )
+		marks |= MapMarkPet;
+	if ( (flags & MG_OBJPILE) && iflags.hilite_pile )
+		marks |= MapMarkPile;
+	if ( (flags & MG_DETECT) && iflags.use_inverse )
+		marks |= MapMarkDetected;
+	if ( flags & MG_RIDDEN )
+		marks |= MapMarkRidden;
+	if ( flags & kMapPeaceful )
+		marks |= MapMarkPeaceful;
+	return marks;
+}
+
+- (void)drawMarks:(MapMarks)marks inRect:(NSRect)r
+{
+	if ( marks & MapMarkPet )
+		[petMark drawInRect:r fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
+	if ( !(marks & ~MapMarkPet) )
 		return;
 	CGFloat size = MAX(5.0, round(MIN(r.size.width, r.size.height) * 0.2));
 	CGFloat inset = MAX(1.0, round(size * 0.3));
 
-	if ( flags & MG_DETECT ) {
+	if ( marks & MapMarkDetected ) {
 		[[NSColor colorWithWhite:0.0 alpha:0.35] setFill];
 		NSRectFillUsingOperation(r, NSCompositingOperationSourceOver);
 		NSBezierPath * outline = [NSBezierPath bezierPathWithRect:NSInsetRect(r, 1.5, 1.5)];
@@ -281,11 +302,11 @@ static void DrawBadge(NSBezierPath * path, NSColor * fill)
 		[[NSColor colorWithSRGBRed:0.4 green:0.85 blue:1.0 alpha:0.9] setStroke];
 		[outline stroke];
 	}
-	if ( flags & kMapPeaceful ) {
+	if ( marks & MapMarkPeaceful ) {
 		NSRect dot = NSMakeRect(NSMinX(r) + inset, NSMinY(r) + inset, size, size);
 		DrawBadge([NSBezierPath bezierPathWithOvalInRect:dot], [NSColor colorWithSRGBRed:0.35 green:0.8 blue:0.45 alpha:1.0]);
 	}
-	if ( flags & MG_RIDDEN ) {
+	if ( marks & MapMarkRidden ) {
 		NSBezierPath * saddle = [NSBezierPath bezierPath];
 		CGFloat left = NSMinX(r) + inset, bottom = NSMaxY(r) - inset;
 		[saddle moveToPoint:NSMakePoint(left, bottom)];
@@ -294,7 +315,7 @@ static void DrawBadge(NSBezierPath * path, NSColor * fill)
 		[saddle closePath];
 		DrawBadge(saddle, [NSColor colorWithSRGBRed:1.0 green:0.8 blue:0.25 alpha:1.0]);
 	}
-	if ( flags & MG_OBJPILE ) {
+	if ( marks & MapMarkPile ) {
 		CGFloat item = round(size * 0.8), offset = round(size * 0.35);
 		NSRect front = NSMakeRect(NSMaxX(r) - inset - item, NSMaxY(r) - inset - item, item, item);
 		NSRect back = NSOffsetRect(front, -offset, -offset);
@@ -379,14 +400,7 @@ static void DrawBadge(NSBezierPath * path, NSColor * fill)
 							[image drawInRect:r fromRect:srcRect operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
 						}
 						
-						if (glyph_is_pet(glyph) && iflags.hilite_pet) {
-#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1060
-							[petMark drawAdjustedInRect:r fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1.0];
-#else
-							[petMark drawInRect:r fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
-#endif
-						}
-						[self drawMarksForFlags:[map flagsAtX:i y:j] inRect:r];
+						[self drawMarks:[self marksForGlyph:glyph flags:[map flagsAtX:i y:j]] inRect:r];
 						
 					} else {
 						// no glyph at this location

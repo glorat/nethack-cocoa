@@ -38,5 +38,7 @@ static NSMutableArray<NSNumber *> * sentKeys;
 -(NhEvent *)nextEvent { return nil; }
 -(void)waitForNextEvent {}
 -(NhEvent *)peek { return nil; }
+-(BOOL)gameIsWaiting { return NO; }
+-(void)gameWaitsOnWindow:(BOOL)waits {}
 
 @end
