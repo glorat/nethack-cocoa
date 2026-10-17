@@ -45,6 +45,7 @@
 		glyph = g;
 		selected = s;
 		amount = -1; // all is default
+		_color = NO_COLOR;
 		maxAmount = [title parseNetHackAmount];
 	}
 	return self;

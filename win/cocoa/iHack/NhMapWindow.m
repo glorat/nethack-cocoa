@@ -33,13 +33,22 @@
 		NSLog(@"map window %lx", (long)self);
 		memset(glyphs, kNoGlyph, sizeof glyphs);
 		memset(bkglyphs, kNoGlyph, sizeof bkglyphs);
+		memset(flags, 0, sizeof flags);
 	}
 	return self;
 }
 
-- (void) printGlyph:(int)glyph background:(int)bkglyph atX:(int)x y:(int)y {
+- (void) printGlyph:(int)glyph background:(int)bkglyph flags:(unsigned)f atX:(int)x y:(int)y {
 	glyphs[y][x] = glyph;
 	bkglyphs[y][x] = bkglyph;
+	flags[y][x] = f;
+}
+
+- (void) setPeaceful:(BOOL)peaceful atX:(int)x y:(int)y {
+	if ( peaceful )
+		flags[y][x] |= kMapPeaceful;
+	else
+		flags[y][x] &= ~kMapPeaceful;
 }
 
 - (void)setCursX:(int)x y:(int)y {
@@ -62,10 +71,15 @@
 	return bkglyphs[y][x];
 }
 
+- (unsigned) flagsAtX:(int)x y:(int)y {
+	return flags[y][x];
+}
+
 - (void) clear {
 	[super clear];
 	memset(glyphs, kNoGlyph, sizeof glyphs);
 	memset(bkglyphs, kNoGlyph, sizeof bkglyphs);
+	memset(flags, 0, sizeof flags);
 }
 
 @end

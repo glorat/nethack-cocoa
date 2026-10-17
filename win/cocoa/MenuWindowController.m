@@ -29,6 +29,7 @@
 #import "NhItem.h"
 #import "NhItemGroup.h"
 #import "TileSet.h"
+#import "NhTextStyle.h"
 #import "NhEventQueue.h"
 
 static const CGFloat kTileSize		= 24.0;
@@ -45,6 +46,8 @@ static const CGFloat kButtonBar		= 52.0;
 @property (nonatomic, strong) NSArray<NSString *> * fields;
 @property (nonatomic, assign) BOOL heading;
 @property (nonatomic, assign) CGFloat start;	// where the first field begins
+@property (nonatomic, assign) int color;
+@property (nonatomic, assign) int attr;
 @end
 
 @implementation MenuRow
@@ -236,6 +239,7 @@ static NSString * SortKey( NSString * title )
 			NSString * text = [[title substringFromIndex:spaces] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
 			MenuRow * row = [MenuRow new];
 			row.fields = SplitFields(text);
+			row.color = group.color;
 			row.heading = group.items.count > 0
 						|| (group.attr != ATR_NONE && text.length > 0)
 						|| (spaces == 0 && [text hasSuffix:@":"]);
@@ -250,6 +254,8 @@ static NSString * SortKey( NSString * title )
 		for ( NhItem * item in group.items ) {
 			MenuRow * row = [MenuRow new];
 			row.item = item;
+			row.color = item.color;
+			row.attr = item.attr;
 			NSString * text = [item.title stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
 			if ( item.detail )
 				text = [text stringByAppendingFormat:@" (%@)", item.detail];
@@ -264,7 +270,7 @@ static NSString * SortKey( NSString * title )
 
 -(NSFont *)fontForRow:(MenuRow *)row
 {
-	return row.heading ? headingFont : bodyFont;
+	return NhTextAttributes(row.color, row.attr, row.heading ? headingFont : bodyFont)[NSFontAttributeName];
 }
 
 // column positions shared by every row, so items, headings and text line up
@@ -316,9 +322,9 @@ static NSString * SortKey( NSString * title )
 -(NSAttributedString *)stringForRow:(MenuRow *)row
 {
 	NSMutableParagraphStyle * style = [paragraphStyle mutableCopy];
-	NSDictionary * attributes = @{ NSFontAttributeName : [self fontForRow:row],
-								   NSForegroundColorAttributeName : [NSColor labelColor],
-								   NSParagraphStyleAttributeName : style };
+	NSMutableDictionary * attributes = [NhTextAttributes(row.color, row.attr, row.heading ? headingFont : bodyFont) mutableCopy];
+	attributes[NSParagraphStyleAttributeName] = style;
+	NSDictionary * tabAttributes = @{ NSFontAttributeName : attributes[NSFontAttributeName], NSParagraphStyleAttributeName : style };
 	NSMutableAttributedString * s = [[NSMutableAttributedString alloc] init];
 
 	if ( row.item ) {
@@ -330,7 +336,7 @@ static NSString * SortKey( NSString * title )
 				attachment.bounds = NSMakeRect(0, round((capHeight - kTileSize) / 2), kTileSize, kTileSize);
 				[s appendAttributedString:[NSAttributedString attributedStringWithAttachment:attachment]];
 			}
-			[s appendAttributedString:[[NSAttributedString alloc] initWithString:@"\t" attributes:attributes]];
+			[s appendAttributedString:[[NSAttributedString alloc] initWithString:@"\t" attributes:tabAttributes]];
 		}
 		if ( hasLetters ) {
 			NSString * letter = row.item.inventoryLetter ? [NSString stringWithFormat:@"%c", row.item.inventoryLetter] : @"";
@@ -338,7 +344,7 @@ static NSString * SortKey( NSString * title )
 												 NSForegroundColorAttributeName : [NSColor secondaryLabelColor],
 												 NSParagraphStyleAttributeName : style };
 			[s appendAttributedString:[[NSAttributedString alloc] initWithString:letter attributes:letterAttributes]];
-			[s appendAttributedString:[[NSAttributedString alloc] initWithString:@"\t" attributes:attributes]];
+			[s appendAttributedString:[[NSAttributedString alloc] initWithString:@"\t" attributes:tabAttributes]];
 		}
 	} else {
 		style.firstLineHeadIndent = row.start;
@@ -426,9 +432,7 @@ static NSString * SortKey( NSString * title )
 			NSFontAttributeName : [NSFont monospacedSystemFontOfSize:bodyFont.pointSize weight:NSFontWeightMedium],
 			NSForegroundColorAttributeName : [NSColor secondaryLabelColor] }]];
 	}
-	[title appendAttributedString:[[NSAttributedString alloc] initWithString:row.fields[0] attributes:@{
-		NSFontAttributeName : bodyFont,
-		NSForegroundColorAttributeName : [NSColor labelColor] }]];
+	[title appendAttributedString:[[NSAttributedString alloc] initWithString:row.fields[0] attributes:NhTextAttributes(row.color, row.attr, bodyFont)]];
 	[title addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, title.length)];
 	button.attributedTitle = title;
 	if ( [checked containsObject:row.item] )

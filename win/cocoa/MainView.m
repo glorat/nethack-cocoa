@@ -202,9 +202,9 @@ static const int zoomLevelCount = sizeof zoomLevels / sizeof zoomLevels[0];
 		asciiColors = @[
 			/* CLR_BLACK			*/	[NSColor colorWithDeviceRed:0.333 green:0.333 blue:0.333 alpha:1.0],
 			/* CLR_RED				*/	[NSColor redColor],
-			/* CLR_GREEN			*/	[NSColor colorWithDeviceRed:0.0 green:0.5 blue:0.0 alpha:1.0],
-			/* CLR_BROWN			*/	[NSColor colorWithDeviceRed:0.666 green:0.166 blue:0.166 alpha:1.0],
-			/* CLR_BLUE				*/	[NSColor blueColor],
+			/* CLR_GREEN			*/	[NSColor colorWithDeviceRed:0.1 green:0.65 blue:0.1 alpha:1.0],
+			/* CLR_BROWN			*/	[NSColor colorWithDeviceRed:0.7 green:0.45 blue:0.1 alpha:1.0],
+			/* CLR_BLUE				*/	[NSColor colorWithDeviceRed:0.25 green:0.4 blue:1.0 alpha:1.0],
 			/* CLR_MAGENTA			*/	[NSColor magentaColor],
 			/* CLR_CYAN				*/	[NSColor cyanColor],
 			/* CLR_GRAY				*/	[NSColor colorWithDeviceWhite:0.75 alpha:1.0],
@@ -250,6 +250,59 @@ static const int zoomLevelCount = sizeof zoomLevels / sizeof zoomLevels[0];
 	[self cliparoundX:u.ux y:u.uy];
 }
 
+
+static void DrawBadge(NSBezierPath * path, NSColor * fill)
+{
+	[fill setFill];
+	[path fill];
+	[[NSColor colorWithWhite:0.0 alpha:0.75] setStroke];
+	path.lineWidth = 1.0;
+	[path stroke];
+}
+
+- (void)drawMarksForFlags:(unsigned)flags inRect:(NSRect)r
+{
+	if ( !iflags.use_inverse )
+		flags &= ~MG_DETECT;
+	if ( !iflags.hilite_pile )
+		flags &= ~MG_OBJPILE;
+	if ( !(flags & (MG_DETECT | MG_OBJPILE | MG_RIDDEN | kMapPeaceful)) )
+		return;
+	CGFloat size = MAX(5.0, round(MIN(r.size.width, r.size.height) * 0.2));
+	CGFloat inset = MAX(1.0, round(size * 0.3));
+
+	if ( flags & MG_DETECT ) {
+		[[NSColor colorWithWhite:0.0 alpha:0.35] setFill];
+		NSRectFillUsingOperation(r, NSCompositingOperationSourceOver);
+		NSBezierPath * outline = [NSBezierPath bezierPathWithRect:NSInsetRect(r, 1.5, 1.5)];
+		CGFloat dash[] = { size * 0.6, size * 0.4 };
+		[outline setLineDash:dash count:2 phase:0];
+		outline.lineWidth = MAX(1.0, round(size * 0.15));
+		[[NSColor colorWithSRGBRed:0.4 green:0.85 blue:1.0 alpha:0.9] setStroke];
+		[outline stroke];
+	}
+	if ( flags & kMapPeaceful ) {
+		NSRect dot = NSMakeRect(NSMinX(r) + inset, NSMinY(r) + inset, size, size);
+		DrawBadge([NSBezierPath bezierPathWithOvalInRect:dot], [NSColor colorWithSRGBRed:0.35 green:0.8 blue:0.45 alpha:1.0]);
+	}
+	if ( flags & MG_RIDDEN ) {
+		NSBezierPath * saddle = [NSBezierPath bezierPath];
+		CGFloat left = NSMinX(r) + inset, bottom = NSMaxY(r) - inset;
+		[saddle moveToPoint:NSMakePoint(left, bottom)];
+		[saddle lineToPoint:NSMakePoint(left + size, bottom)];
+		[saddle lineToPoint:NSMakePoint(left + size / 2, bottom - size)];
+		[saddle closePath];
+		DrawBadge(saddle, [NSColor colorWithSRGBRed:1.0 green:0.8 blue:0.25 alpha:1.0]);
+	}
+	if ( flags & MG_OBJPILE ) {
+		CGFloat item = round(size * 0.8), offset = round(size * 0.35);
+		NSRect front = NSMakeRect(NSMaxX(r) - inset - item, NSMaxY(r) - inset - item, item, item);
+		NSRect back = NSOffsetRect(front, -offset, -offset);
+		NSColor * paper = [NSColor colorWithWhite:0.95 alpha:1.0];
+		DrawBadge([NSBezierPath bezierPathWithRoundedRect:back xRadius:1.5 yRadius:1.5], paper);
+		DrawBadge([NSBezierPath bezierPathWithRoundedRect:front xRadius:1.5 yRadius:1.5], paper);
+	}
+}
 
 - (void)drawRect:(NSRect)rect 
 {
@@ -326,13 +379,14 @@ static const int zoomLevelCount = sizeof zoomLevels / sizeof zoomLevels[0];
 							[image drawInRect:r fromRect:srcRect operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
 						}
 						
-						if (glyph_is_pet(glyph)) {
+						if (glyph_is_pet(glyph) && iflags.hilite_pet) {
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 1060
 							[petMark drawAdjustedInRect:r fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1.0];
 #else
 							[petMark drawInRect:r fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0f respectFlipped:YES hints:nil];
 #endif
 						}
+						[self drawMarksForFlags:[map flagsAtX:i y:j] inRect:r];
 						
 					} else {
 						// no glyph at this location

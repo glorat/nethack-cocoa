@@ -25,6 +25,8 @@
 #import "NhItemGroup.h"
 #import "NhItem.h"
 
+#include "color.h"
+
 @implementation NhItemGroup
 
 @synthesize title;
@@ -35,6 +37,7 @@
 	if (self = [super init]) {
 		title = [t copy];
 		dummy = d;
+		_color = NO_COLOR;
 		items = [[NSMutableArray alloc] init];
 	}
 	return self;

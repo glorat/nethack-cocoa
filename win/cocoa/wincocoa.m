@@ -59,7 +59,7 @@
 struct window_procs cocoa_procs = {
 "cocoa",
 wp_cocoa,
-WC_COLOR|WC_HILITE_PET|
+WC_COLOR|WC_HILITE_PET|WC_INVERSE|
 WC_ASCII_MAP|WC_TILED_MAP|
 WC_FONT_MAP|WC_TILE_FILE|WC_TILE_WIDTH|WC_TILE_HEIGHT|
 WC_PLAYER_SELECTION|WC_SPLASH_SCREEN,
@@ -221,6 +221,32 @@ void cocoa_decgraphics_mode_callback()
 
 #pragma mark nethack window API
 
+// the first matching rule wins, so the player's own rules go ahead of these
+static void AddDefaultMenuColors(void)
+{
+	static const char * rules[] = {
+		"\" blessed \"=green",
+		"\" holy water\"=green",
+		"\" cursed \"=red",
+		"\" unholy water\"=red",
+	};
+	struct menucoloring * players = gm.menu_colorings;
+	gm.menu_colorings = NULL;
+	for ( int i = 0; i < SIZE(rules); ++i ) {
+		char rule[BUFSZ];
+		Strcpy(rule, rules[i]);
+		(void) add_menu_coloring(rule);
+	}
+	if ( players ) {
+		struct menucoloring * last = players;
+		while ( last->next )
+			last = last->next;
+		last->next = gm.menu_colorings;
+		gm.menu_colorings = players;
+	}
+	iflags.use_menu_color = TRUE;
+}
+
 void cocoa_init_nhwindows(int* argc, char** argv)
 {
 	//NSLog(@"init_nhwindows");
@@ -249,6 +275,10 @@ void cocoa_init_nhwindows(int* argc, char** argv)
 	// hardwire OPTIONS=time,showexp for issue 8
 	flags.time = TRUE;
 	flags.showexp = TRUE;
+
+	iflags.hilite_pet = TRUE;
+	iflags.hilite_pile = TRUE;
+	AddDefaultMenuColors();
 	
 	[[MainWindowController instance] initWindows];
 }
@@ -411,10 +441,13 @@ void cocoa_add_menu(winid wid, const glyph_info *glyphinfo, const ANY_P *identif
 	if (identifier->a_void) {
 		NhItem *i = [[NhItem alloc] initWithTitle:title
 									   identifier:*identifier accelerator:accelerator group_accel:group_accel glyph:glyph selected:presel];
+		i.color = clr;
+		i.attr = attr;
 		[win.currentItemGroup addItem:i];
 	} else {
 		NhItemGroup *g = [[NhItemGroup alloc] initWithTitle:title];
 		g.attr = attr;
+		g.color = clr;
 		[win addItemGroup:g];
 	}
 }
@@ -458,6 +491,7 @@ static NSArray<NhItem *> * UnlistedInventory(NhMenuWindow * win)
 }
 
 static BOOL s_buildingSidebar = NO;
+static void RefreshPeacefulMarks(void);
 
 int cocoa_select_menu(winid wid, int how, menu_item **selected)
 {
@@ -469,6 +503,7 @@ int cocoa_select_menu(winid wid, int how, menu_item **selected)
 		[[MainWindowController instance] setInventoryGroups:[win.itemGroups copy]];
 		return 0;
 	}
+	RefreshPeacefulMarks();
 	NhEvent * next = [[NhEventQueue instance] peek];
 	if ( how == PICK_ONE && [next isKindOfClass:[NhMenuPickEvent class]] ) {
 		[[NhEventQueue instance] nextEvent];
@@ -548,6 +583,18 @@ void cocoa_cliparound_window(winid wid, int x, int y)
 	}
 }
 
+// the core has no glyph flag for peaceful monsters
+static BOOL ShowsPeacefulMonster(coordxy x, coordxy y, int glyph)
+{
+	if ( Hallucination || !glyph_is_monster(glyph) || glyph_is_pet(glyph) || glyph_is_ridden_monster(glyph) )
+		return NO;
+	struct monst * mtmp = m_at(x, y);
+	int shown = glyph_to_mon(glyph);
+	return mtmp && mtmp->mpeaceful && !mtmp->mtame && M_AP_TYPE(mtmp) == M_AP_NOTHING
+		&& (monsndx(mtmp->data) == shown || (shown == PM_LONG_WORM_TAIL && mtmp->data == &mons[PM_LONG_WORM]))
+		&& canspotmon(mtmp);
+}
+
 void cocoa_print_glyph(winid wid, coordxy x, coordxy y, const glyph_info *glyphinfo,
 					   const glyph_info *bkglyphinfo)
 {
@@ -555,7 +602,33 @@ void cocoa_print_glyph(winid wid, coordxy x, coordxy y, const glyph_info *glyphi
 	int bkglyph = bkglyphinfo ? bkglyphinfo->glyph : GLYPH_UNEXPLORED;
 	//NSLog(@"print_glyph %x %d,%d", wid, x, y);
 	NhMapWindow * win = (NhMapWindow *) g_WindowDict[@(wid)];
-	[win printGlyph:glyph background:bkglyph atX:x y:y];
+	unsigned flags = glyphinfo->gm.glyphflags;
+	if ( ShowsPeacefulMonster(x, y, glyph) )
+		flags |= kMapPeaceful;
+	[win printGlyph:glyph background:bkglyph flags:flags atX:x y:y];
+}
+
+// a monster can be angered or pacified without being redrawn
+static void RefreshPeacefulMarks(void)
+{
+	if ( !program_state.in_moveloop || program_state.gameover )
+		return;
+	NhMapWindow * map = (NhMapWindow *) [NhWindow mapWindow];
+	BOOL changed = NO;
+	for ( coordxy y = 0; y < ROWNO; ++y ) {
+		for ( coordxy x = 1; x < COLNO; ++x ) {
+			int glyph = [map glyphAtX:x y:y];
+			if ( glyph == kNoGlyph )
+				continue;
+			BOOL peaceful = ShowsPeacefulMonster(x, y, glyph);
+			if ( peaceful != (([map flagsAtX:x y:y] & kMapPeaceful) != 0) ) {
+				[map setPeaceful:peaceful atX:x y:y];
+				changed = YES;
+			}
+		}
+	}
+	if ( changed )
+		cocoa_display_nhwindow(WIN_MAP, FALSE);
 }
 
 void cocoa_raw_print(const char *str)
@@ -575,6 +648,7 @@ void cocoa_raw_print_bold(const char *str)
 
 int cocoa_nhgetch(void)
 {
+	RefreshPeacefulMarks();
 	[[MainWindowController instance] refreshAllViews];
 	for (;;) {
 		NhEvent *e = [[NhEventQueue instance] nextEvent];
@@ -595,6 +669,7 @@ int cocoa_nh_poskey(coordxy *x, coordxy *y, int *mod)
 		cocoa_update_inventory(0);
 		[[MainWindowController instance] updateWizardMenu];
 	}
+	RefreshPeacefulMarks();
 	[[MainWindowController instance] refreshAllViews];
 	NhEvent *e;
 	do {
@@ -636,6 +711,7 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 		}
 	}
 	
+	RefreshPeacefulMarks();
 	yn_number = 0;
 	NSString * text = [NSString stringWithFormat:@"%s", question];
 	if ( choices && choices[0] ) {
@@ -685,6 +761,7 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 void cocoa_getlin(const char *prompt, char *line)
 {
 	//NSLog(@"getlin %s", prompt);
+	RefreshPeacefulMarks();
 	[[MainWindowController instance] refreshAllViews];
 	[[MainWindowController instance] getLineWithPrompt:[NSString stringWithCString:prompt encoding:NSISOLatin1StringEncoding]];
 	// keys typed before the window opened can't be the answer
@@ -704,6 +781,7 @@ void cocoa_getlin(const char *prompt, char *line)
 int cocoa_get_ext_cmd()
 {
 	//NSLog(@"get_ext_cmd");
+	RefreshPeacefulMarks();
 	// a menu item queues its command name after the '#'; otherwise ask
 	if ( ![[[NhEventQueue instance] peek] isKindOfClass:[NhTextInputEvent class]] )
 		[[MainWindowController instance] showExtendedCommands];
