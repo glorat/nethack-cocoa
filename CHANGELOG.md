@@ -10,6 +10,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - Menus and the inventory sidebar show the colors and highlighting set by the menucolors option.
 - The map marks peaceful monsters and your steed.
 - The map marks item piles and monsters you sense but can't see.
+- Hunger, encumbrance and status conditions show as colored badges, with deadly ones in red.
 
 ### Changed
 

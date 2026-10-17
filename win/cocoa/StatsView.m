@@ -28,7 +28,59 @@
 #import "hack.h"
 
 
+@interface StatusBadgeView : NSView
+- (instancetype)initWithBadge:(NhStatusBadge *)badge;
+@end
+
+@implementation StatusBadgeView
+{
+	NhStatusBadge	*	badge;
+	NSDictionary	*	attributes;
+}
+
+static const CGFloat kBadgePadding = 6.0;
+
+- (instancetype)initWithBadge:(NhStatusBadge *)b
+{
+	if ( self = [super initWithFrame:NSZeroRect] ) {
+		badge = b;
+		NSColor * text = b.severity == NhSeverityInfo ? [NSColor labelColor]
+			: b.severity == NhSeverityCaution ? [NSColor blackColor]
+			: [NSColor whiteColor];
+		attributes = @{ NSFontAttributeName : [NSFont systemFontOfSize:11 weight:NSFontWeightSemibold],
+						NSForegroundColorAttributeName : text };
+		self.translatesAutoresizingMaskIntoConstraints = NO;
+		self.toolTip = b.text;
+	}
+	return self;
+}
+
+- (NSSize)intrinsicContentSize
+{
+	NSSize text = [badge.text sizeWithAttributes:attributes];
+	return NSMakeSize(ceil(text.width) + 2 * kBadgePadding, ceil(text.height) + 2);
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+	NSColor * fill = badge.severity == NhSeverityDanger ? [NSColor systemRedColor]
+		: badge.severity == NhSeverityWarning ? [NSColor systemOrangeColor]
+		: badge.severity == NhSeverityCaution ? [NSColor systemYellowColor]
+		: [NSColor quaternaryLabelColor];
+	[fill setFill];
+	CGFloat radius = self.bounds.size.height / 2;
+	[[NSBezierPath bezierPathWithRoundedRect:self.bounds xRadius:radius yRadius:radius] fill];
+	NSSize text = [badge.text sizeWithAttributes:attributes];
+	[badge.text drawAtPoint:NSMakePoint(kBadgePadding, round((self.bounds.size.height - text.height) / 2)) withAttributes:attributes];
+}
+
+@end
+
+
 @implementation StatsView
+{
+	NSStackView	*	badges;
+}
 
 
 - (id)initWithFrame:(NSRect)frame {
@@ -64,6 +116,20 @@
 -(void)awakeFromNib
 {
 	[self clearAll];
+
+	badges = [[NSStackView alloc] init];
+	badges.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+	badges.spacing = 4;
+	badges.translatesAutoresizingMaskIntoConstraints = NO;
+	[badges setClippingResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+	[self addSubview:badges];
+	[NSLayoutConstraint activateConstraints:@[
+		[badges.leadingAnchor constraintEqualToAnchor:state.leadingAnchor],
+		[badges.centerYAnchor constraintEqualToAnchor:state.centerYAnchor],
+		[badges.trailingAnchor constraintLessThanOrEqualToAnchor:self.trailingAnchor constant:-8],
+	]];
+	// keeps its place in the layout for the badges
+	state.hidden = YES;
 }
 
 static void SetMeter(NSLevelIndicator * meter, int current, int maximum)
@@ -108,7 +174,10 @@ static void SetMeter(NSLevelIndicator * meter, int current, int maximum)
 	[wis setStringValue:value(BL_WI)];
 	[cha setStringValue:value(BL_CH)];
 	[turn setStringValue:value(BL_TIME)];
-	[state setStringValue:status.stateText ?: @""];
+	for ( NSView * view in badges.arrangedSubviews )
+		[view removeFromSuperview];
+	for ( NhStatusBadge * badge in status.badges )
+		[badges addArrangedSubview:[[StatusBadgeView alloc] initWithBadge:badge]];
 }
 
 @end

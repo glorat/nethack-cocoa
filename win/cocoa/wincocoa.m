@@ -595,20 +595,41 @@ static NSString * RoleText(NSString * alignment)
 			alignment ?: @"", gu.urace.adj, pmname(&mons[u.umonnum], Ugender)];
 }
 
-static NSString * ConditionText(unsigned long mask)
+// mirrors the core's major_troubles, minor_troubles and movement condition groups
+#define MAJOR_TROUBLES (BL_MASK_FOODPOIS | BL_MASK_GRAB | BL_MASK_INLAVA | BL_MASK_SLIME \
+						| BL_MASK_STONE | BL_MASK_STRNGL | BL_MASK_TERMILL)
+#define MINOR_TROUBLES (BL_MASK_BLIND | BL_MASK_CONF | BL_MASK_DEAF | BL_MASK_HALLU \
+						| BL_MASK_PARLYZ | BL_MASK_SUBMERGED | BL_MASK_STUN)
+#define MOVEMENT (BL_MASK_LEV | BL_MASK_FLY | BL_MASK_RIDE)
+
+static NSArray<NhStatusBadge *> * StatusBadges(NSString * hunger, NSString * encumbrance, unsigned long active)
 {
-	static const struct { unsigned long mask; const char * name; } shown[] = {
-		{ BL_MASK_STONE, "Stone" }, { BL_MASK_SLIME, "Slime" }, { BL_MASK_STRNGL, "Strngl" },
-		{ BL_MASK_FOODPOIS, "FoodPois" }, { BL_MASK_TERMILL, "TermIll" }, { BL_MASK_BLIND, "Blind" },
-		{ BL_MASK_DEAF, "Deaf" }, { BL_MASK_STUN, "Stun" }, { BL_MASK_CONF, "Conf" },
-		{ BL_MASK_HALLU, "Hallu" }, { BL_MASK_LEV, "Lev" }, { BL_MASK_FLY, "Fly" }, { BL_MASK_RIDE, "Ride" },
-	};
-	NSMutableArray * names = [NSMutableArray array];
-	for ( int i = 0; i < SIZE(shown); ++i ) {
-		if ( mask & shown[i].mask )
-			[names addObject:@(shown[i].name)];
+	NSMutableArray * badges = [NSMutableArray array];
+	if ( hunger.length ) {
+		NhSeverity severity = u.uhs == SATIATED ? NhSeverityInfo
+			: u.uhs == HUNGRY ? NhSeverityCaution
+			: u.uhs == WEAK ? NhSeverityWarning
+			: NhSeverityDanger;
+		[badges addObject:[NhStatusBadge badgeWithText:hunger severity:severity]];
 	}
-	return [names componentsJoinedByString:@" "];
+	if ( encumbrance.length ) {
+		int cap = near_capacity();
+		NhSeverity severity = cap == SLT_ENCUMBER ? NhSeverityCaution
+			: cap == MOD_ENCUMBER ? NhSeverityWarning
+			: NhSeverityDanger;
+		[badges addObject:[NhStatusBadge badgeWithText:encumbrance severity:severity]];
+	}
+	for ( int i = 0; i < CONDITION_COUNT; ++i ) {
+		const struct conditions_t * condition = &conditions[cond_idx[i]];
+		if ( !(active & condition->mask) )
+			continue;
+		NhSeverity severity = (condition->mask & MAJOR_TROUBLES) ? NhSeverityDanger
+			: (condition->mask & MINOR_TROUBLES) ? NhSeverityWarning
+			: (condition->mask & MOVEMENT) ? NhSeverityInfo
+			: NhSeverityCaution;
+		[badges addObject:[NhStatusBadge badgeWithText:@(condition->text[0]) severity:severity]];
+	}
+	return badges;
 }
 
 void cocoa_status_update(int fld, genericptr_t ptr, int chg, int percent, int color, unsigned long *colormasks)
@@ -619,12 +640,7 @@ void cocoa_status_update(int fld, genericptr_t ptr, int chg, int percent, int co
 	if ( fld == BL_FLUSH || fld == BL_RESET ) {
 		s_status.levelText = LevelText([s_status valueForField:BL_LEVELDESC] ?: @"");
 		s_status.roleText = RoleText([s_status valueForField:BL_ALIGN]);
-		NSMutableArray * state = [NSMutableArray array];
-		for ( NSString * text in @[ [s_status valueForField:BL_HUNGER] ?: @"", [s_status valueForField:BL_CAP] ?: @"", ConditionText(s_conditions) ] ) {
-			if ( text.length )
-				[state addObject:text];
-		}
-		s_status.stateText = [state componentsJoinedByString:@" "];
+		s_status.badges = StatusBadges([s_status valueForField:BL_HUNGER], [s_status valueForField:BL_CAP], s_conditions);
 		[[MainWindowController instance] updateStatus:[s_status copy]];
 		return;
 	}

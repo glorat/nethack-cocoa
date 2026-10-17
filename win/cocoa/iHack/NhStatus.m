@@ -5,6 +5,18 @@
 
 #import "NhStatus.h"
 
+@implementation NhStatusBadge
+
++ (instancetype)badgeWithText:(NSString *)text severity:(NhSeverity)severity
+{
+	NhStatusBadge * badge = [[self alloc] init];
+	badge->_text = [text copy];
+	badge->_severity = severity;
+	return badge;
+}
+
+@end
+
 @implementation NhStatus
 {
 	NSMutableDictionary<NSNumber *, NSString *> *	values;
@@ -27,7 +39,7 @@
 	copy->enabled = [enabled mutableCopy];
 	copy.levelText = self.levelText;
 	copy.roleText = self.roleText;
-	copy.stateText = self.stateText;
+	copy.badges = self.badges;
 	return copy;
 }
 
