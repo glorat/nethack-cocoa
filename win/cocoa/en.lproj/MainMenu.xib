@@ -738,6 +738,13 @@
                                     <action selector="actualSize:" target="943" id="zm3-as-002"/>
                                 </connections>
                             </menuItem>
+                            <menuItem isSeparatorItem="YES" id="inv-sep-001"/>
+                            <menuItem title="Hide Inventory" keyEquivalent="s" id="inv-tog-001">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleInventory:" target="943" id="inv-tog-002"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="rg-sep-004"/>
                             <menuItem title="Use Speech" id="1690">
                                 <modifierMask key="keyEquivalentModifierMask"/>

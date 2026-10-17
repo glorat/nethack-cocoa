@@ -230,6 +230,9 @@ void cocoa_init_nhwindows(int* argc, char** argv)
 	iflags.menu_tab_sep = TRUE;
 	// tiles with transparent backgrounds are drawn over the floor beneath them
 	iflags.use_background_glyph = TRUE;
+	// the inventory sidebar lists gold too, like the 'i' menu
+	if ( iflags.perminv_mode == InvOptNone )
+		iflags.perminv_mode = InvOptFull;
 	
 	// default ASCII mode is to use IBM graphics with color
 	iflags.use_color = TRUE;
@@ -454,17 +457,39 @@ static NSArray<NhItem *> * UnlistedInventory(NhMenuWindow * win)
 	return unlisted;
 }
 
+static BOOL s_buildingSidebar = NO;
+
 int cocoa_select_menu(winid wid, int how, menu_item **selected)
 {
 	//NSLog(@"select_menu %x", wid);
 	NhMenuWindow * win = (NhMenuWindow *) g_WindowDict[@(wid)];
+
+	*selected = NULL;
+	if ( s_buildingSidebar && wid == WIN_INVEN ) {
+		[[MainWindowController instance] setInventoryGroups:[win.itemGroups copy]];
+		return 0;
+	}
+	NhEvent * next = [[NhEventQueue instance] peek];
+	if ( how == PICK_ONE && [next isKindOfClass:[NhMenuPickEvent class]] ) {
+		[[NhEventQueue instance] nextEvent];
+		for ( NhItemGroup * g in win.itemGroups ) {
+			for ( NhItem * item in g.items ) {
+				if ( item.inventoryLetter == ((NhMenuPickEvent *)next).letter ) {
+					*selected = calloc(1, sizeof(menu_item));
+					(*selected)->item = item.identifier;
+					(*selected)->count = -1;
+					return 1;
+				}
+			}
+		}
+		return -1;
+	}
 
 	win.how = how;
 	if ( how == PICK_ONE )
 		win.unlistedItems = UnlistedInventory(win);
 	// pick menus wait for their answer in nextEvent; PICK_NONE has none to wait for
 	win.blocking = (how == PICK_NONE);
-	*selected = NULL;
 	[[MainWindowController instance] showMenuWindow:win];
 	
 	if ( how != PICK_NONE ) {
@@ -489,6 +514,12 @@ int cocoa_select_menu(winid wid, int how, menu_item **selected)
 void cocoa_update_inventory(int arg)
 {
 	//NSLog(@"update_inventory");
+	// build the sidebar's list the way the core builds a persistent inventory
+	if ( WIN_INVEN != WIN_ERR && !program_state.gameover && !s_buildingSidebar ) {
+		s_buildingSidebar = YES;
+		(void) display_inventory((char *) 0, FALSE);
+		s_buildingSidebar = NO;
+	}
 	[[MainWindowController instance] updateInventory];
 }
 
@@ -565,7 +596,10 @@ int cocoa_nh_poskey(coordxy *x, coordxy *y, int *mod)
 		[[MainWindowController instance] updateWizardMenu];
 	}
 	[[MainWindowController instance] refreshAllViews];
-	NhEvent *e = [[NhEventQueue instance] nextEvent];
+	NhEvent *e;
+	do {
+		e = [[NhEventQueue instance] nextEvent];
+	} while ( [e isKindOfClass:[NhMenuPickEvent class]] );
 	if (!e.isKeyEvent) {
 		*x = e.x;
 		*y = e.y;

@@ -65,3 +65,13 @@
 }
 
 @end
+
+@implementation NhMenuPickEvent
+
++ (instancetype) eventWithLetter:(char)c {
+	NhMenuPickEvent * e = [[self alloc] initWithKey:0 mod:-1 x:-1 y:-1];
+	e->_letter = c;
+	return e;
+}
+
+@end

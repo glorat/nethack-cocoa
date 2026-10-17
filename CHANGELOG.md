@@ -4,6 +4,10 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 
 ## Unreleased
 
+### Added
+
+- An inventory sidebar lists everything you carry; click an item to choose what to do with it.
+
 ### Changed
 
 - Commands like wield and quaff show a menu of suitable items, and typing any item's letter still works.

@@ -37,6 +37,7 @@
 @class NotesWindowController;
 @class StatsView;
 @class EquipmentView;
+@class InventoryView;
 @class NetHackCocoaAppDelegate;
 
 @interface MainWindowController : NSWindowController <NSWindowDelegate,NSMenuDelegate,NSTableViewDataSource,AVSpeechSynthesizerDelegate,NSFontChanging> {
@@ -57,6 +58,9 @@
 	IBOutlet NSMenuItem						*	asciiModeMenuItem;
 	IBOutlet StatsView						*	statsView;
 	IBOutlet EquipmentView					*	equipmentView;
+	InventoryView							*	inventoryView;
+	NSArray<NSLayoutConstraint *>			*	inventoryShownConstraints;
+	NSArray<NSLayoutConstraint *>			*	inventoryHiddenConstraints;
 	
 	IBOutlet PlayerSelectionWindowController*	showPlayerSelection;
 	IBOutlet NotesWindowController			*	notesWindow;
@@ -93,6 +97,8 @@
 - (void)showMenuWindow:(NhMenuWindow *)w;
 - (void)clipAroundX:(int)x y:(int)y;
 - (void)updateInventory;
+- (void)setInventoryGroups:(NSArray *)groups;
+- (IBAction)toggleInventory:(id)sender;
 - (void)getLineWithPrompt:(NSString *)prompt;
 - (void)displayMessageWindow:(NSString *)text;
 - (void)showExtendedCommands;

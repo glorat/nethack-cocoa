@@ -48,3 +48,13 @@
 - (instancetype) initWithKeychar:(int)k;
 
 @end
+
+// answers the next pick-one menu with an item letter without showing the menu;
+// not a key event, so if no menu comes it is dropped rather than read as a command
+@interface NhMenuPickEvent : NhEvent
+
+@property (nonatomic, readonly) char letter;
+
++ (instancetype) eventWithLetter:(char)c;
+
+@end

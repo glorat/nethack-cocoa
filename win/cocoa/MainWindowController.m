@@ -47,6 +47,7 @@
 #import "TileSet.h"
 #import "NetHackCocoaAppDelegate.h"
 #import "EquipmentView.h"
+#import "InventoryView.h"
 
 #import "wincocoa.h" // cocoa_getpos etc.
 
@@ -54,6 +55,9 @@
 #include "func_tab.h"
 
 static MainWindowController* instance;
+
+static const CGFloat kInventoryWidth = 280;
+static const CGFloat kMinWindowWidth = 637;
 
 @implementation MainWindowController
 
@@ -147,6 +151,90 @@ static MainWindowController* instance;
 	[self fixMenuKeyEquivalents:menu];
 	
 	[[self window] setAcceptsMouseMovedEvents:YES];
+	[self installInventorySidebar];
+}
+
+- (void)installInventorySidebar
+{
+	NSView * content = self.window.contentView;
+	NSScrollView * map = mainView.enclosingScrollView;
+	NSScrollView * messages = messagesView.enclosingScrollView;
+	inventoryView = [[InventoryView alloc] initWithFrame:NSZeroRect];
+	inventoryView.translatesAutoresizingMaskIntoConstraints = NO;
+	__weak MainWindowController * weakSelf = self;
+	inventoryView.chooseItem = ^(char letter) {
+		[weakSelf chooseInventoryItem:letter];
+	};
+	[content addSubview:inventoryView];
+
+	NSMutableArray * edges = [NSMutableArray array];
+	for ( NSLayoutConstraint * c in content.constraints ) {
+		if ( c.firstAttribute == NSLayoutAttributeTrailing && c.secondAttribute == NSLayoutAttributeTrailing
+			&& (c.firstItem == map || c.secondItem == map || c.firstItem == messages || c.secondItem == messages) )
+			[edges addObject:c];
+	}
+	inventoryHiddenConstraints = edges;
+	inventoryShownConstraints = @[
+		[map.trailingAnchor constraintEqualToAnchor:inventoryView.leadingAnchor],
+		[messages.trailingAnchor constraintEqualToAnchor:inventoryView.leadingAnchor],
+		[inventoryView.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
+		[inventoryView.topAnchor constraintEqualToAnchor:content.topAnchor],
+		[inventoryView.bottomAnchor constraintEqualToAnchor:content.bottomAnchor],
+		[inventoryView.widthAnchor constraintEqualToConstant:kInventoryWidth],
+	];
+	[[NSUserDefaults standardUserDefaults] registerDefaults:@{ @"ShowInventory" : @YES }];
+	[self showInventory:[[NSUserDefaults standardUserDefaults] boolForKey:@"ShowInventory"]];
+}
+
+- (void)showInventory:(BOOL)show
+{
+	NSWindow * window = self.window;
+	inventoryView.hidden = !show;
+	if ( show ) {
+		[NSLayoutConstraint deactivateConstraints:inventoryHiddenConstraints];
+		[NSLayoutConstraint activateConstraints:inventoryShownConstraints];
+	} else {
+		[NSLayoutConstraint deactivateConstraints:inventoryShownConstraints];
+		[NSLayoutConstraint activateConstraints:inventoryHiddenConstraints];
+	}
+	NSSize minSize = window.contentMinSize;
+	minSize.width = kMinWindowWidth + (show ? kInventoryWidth : 0);
+	window.contentMinSize = minSize;
+	NSRect content = [window contentRectForFrameRect:window.frame];
+	if ( content.size.width < minSize.width ) {
+		NSRect frame = window.frame;
+		frame.size.width += minSize.width - content.size.width;
+		[window setFrame:frame display:YES];
+	}
+}
+
+- (IBAction)toggleInventory:(id)sender
+{
+	BOOL show = inventoryView.hidden;
+	[self showInventory:show];
+	[[NSUserDefaults standardUserDefaults] setBool:show forKey:@"ShowInventory"];
+}
+
+// the core's #inventory command offers the actions for whichever item is picked
+- (void)chooseInventoryItem:(char)letter
+{
+	char inventoryKey = cmd_from_func(ddoinv);
+	// with keys still queued, the pick could answer a menu one of them opens
+	if ( program_state.input_state != commandInp || !inventoryKey || [[NhEventQueue instance] peek] ) {
+		NSBeep();
+		return;
+	}
+	[[NhEventQueue instance] addEvents:@[ [NhEvent eventWithKeychar:inventoryKey],
+										   [NhMenuPickEvent eventWithLetter:letter] ]];
+}
+
+- (void)setInventoryGroups:(NSArray *)groups
+{
+	if ( ![NSThread isMainThread] ) {
+		[self performSelectorOnMainThread:@selector(setInventoryGroups:) withObject:groups waitUntilDone:NO];
+		return;
+	}
+	[inventoryView setItemGroups:groups];
 }
 
 // called when user options have been read and engine wants windows to be created
@@ -269,6 +357,8 @@ static MainWindowController* instance;
 {
 	if ( item.action == @selector(performMenuAction:) )
 		return program_state.input_state == commandInp;
+	if ( item.action == @selector(toggleInventory:) )
+		item.title = inventoryView.hidden ? @"Show Inventory" : @"Hide Inventory";
 	return YES;
 }
 
