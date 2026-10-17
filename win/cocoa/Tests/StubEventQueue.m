@@ -32,6 +32,7 @@ static NSMutableArray<NSNumber *> * sentKeys;
 }
 
 -(void)addEvent:(NhEvent *)e {}
+-(void)addEvents:(NSArray<NhEvent *> *)list {}
 -(void)addEscapeKey {}
 -(void)addKeys:(const char *)keys {}
 -(void)addCommand:(NhCommand *)cmd {}

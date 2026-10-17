@@ -276,6 +276,10 @@ static CFAbsoluteTime s_loadTime, s_launchTime;
 	if ( recorded )
 		return;
 	recorded = YES;
+	NSArray * messages = [[NhWindow messageWindow] messages];
+	NSUInteger from = messages.count > 10 ? messages.count - 10 : 0;
+	for ( NSUInteger i = from; i < messages.count; ++i )
+		[self say:[@"# message: " stringByAppendingString:AttributedText(messages[i])]];
 	// the main thread may be the thing that is stuck, so don't wait on it for long
 	dispatch_semaphore_t done = dispatch_semaphore_create(0);
 	dispatch_async(dispatch_get_main_queue(), ^{
@@ -1065,6 +1069,15 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 				[self pick:rest];
 			else if ( [command isEqualToString:@"toward"] )
 				[self toward:rest];
+			else if ( [command isEqualToString:@"step"] ) {
+				// a move that silently fails would otherwise only show up in a later check
+				NSPoint from = self.hero;
+				[self toward:rest];
+				[self afterAction];
+				if ( NSEqualPoints(from, self.hero) )
+					[self bailOut:[@"the hero did not move toward " stringByAppendingString:rest]];
+				continue;
+			}
 			else if ( [command isEqualToString:@"click"] )
 				[self click:rest];
 			else if ( [command isEqualToString:@"choose"] )

@@ -62,6 +62,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `pass <n>` | Let `n` turns go by |
 | `pick <text>` | Type the letter of the open menu's row containing `text` |
 | `toward <name>` | Type the direction key toward the adjacent square showing `name` (skipping squares hiding a monster or trap) |
+| `step <name>` | Move the hero onto that square; fails if the hero didn't move |
 | `click sidebar <letter>` | Click an inventory sidebar row |
 | `click wearing <slot>` | Click a Wearing panel slot (`weapon`, `shield`, `cloak`, ...) |
 | `click map <dx> <dy>` | Click the map square at that offset from the hero |
