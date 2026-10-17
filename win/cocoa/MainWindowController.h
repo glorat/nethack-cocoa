@@ -98,6 +98,7 @@
 - (void)clipAroundX:(int)x y:(int)y;
 - (void)updateInventory;
 - (void)setInventoryGroups:(NSArray *)groups;
+- (void)chooseInventoryItem:(char)letter;
 - (IBAction)toggleInventory:(id)sender;
 - (void)getLineWithPrompt:(NSString *)prompt;
 - (void)displayMessageWindow:(NSString *)text;

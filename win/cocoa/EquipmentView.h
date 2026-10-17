@@ -27,6 +27,7 @@
 
 @interface EquipmentView : NSView {
 	int		glyphs[12];
+	char	letters[12];
 	NSArray *	tips;
 }
 

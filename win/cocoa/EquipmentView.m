@@ -29,6 +29,7 @@
 
 #import "EquipmentView.h"
 #import "TileSet.h"
+#import "MainWindowController.h"
 
 #define CELL	32.0
 #define COLS	3
@@ -95,6 +96,17 @@ static NSString * const s_slotNames[COLS*ROWS] = {
 	}
 }
 
+- (void)mouseDown:(NSEvent *)event
+{
+	NSPoint p = [self convertPoint:event.locationInWindow fromView:nil];
+	for ( int slot = 0; slot < COLS*ROWS; ++slot ) {
+		if ( NSPointInRect(p, [self rectForSlot:slot]) && letters[slot] ) {
+			[[MainWindowController instance] chooseInventoryItem:letters[slot]];
+			return;
+		}
+	}
+}
+
 - (NSString *)view:(NSView *)view stringForToolTip:(NSToolTipTag)tag point:(NSPoint)point userData:(void *)data
 {
 	return tips[(NSInteger)data];
@@ -119,6 +131,7 @@ static NSString * const s_slotNames[COLS*ROWS] = {
 		struct obj * item = items[slot];
 		NSString * text = s_slotNames[slot];
 		glyphs[slot] = item ? obj_to_glyph(item, rn2_on_display_rng) : NO_GLYPH;
+		letters[slot] = item ? item->invlet : 0;
 		if ( glyphs[slot] != NO_GLYPH ) {
 			text = [NSString stringWithFormat:@"(%c) %s", item->invlet, doname(item)];
 			if ( [text hasSuffix:@" (being worn)"] )

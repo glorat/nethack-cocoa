@@ -7,6 +7,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 ### Added
 
 - An inventory sidebar lists everything you carry; click an item to choose what to do with it.
+- Click an item in the Wearing panel to choose what to do with it.
 
 ### Changed
 
