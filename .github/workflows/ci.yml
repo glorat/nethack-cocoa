@@ -47,6 +47,19 @@ jobs:
       - name: Test
         run: make -C win/cocoa test
 
+      - name: UI tests
+        run: make -C win/cocoa ARCHFLAGS="-arch arm64 -arch x86_64" uitest
+
+      - name: Keep UI test logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: uitest-logs
+          path: |
+            win/cocoa/build/uitest-logs
+            ~/Library/Containers/io.github.glorat.nethack.uitest/Data/uitest/*/*.png
+          retention-days: 14
+
       - name: Check
         run: |
           app=win/cocoa/build/NetHack.app

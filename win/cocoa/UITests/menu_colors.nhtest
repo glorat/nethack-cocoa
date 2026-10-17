@@ -1,0 +1,23 @@
+# Blessed items are green and cursed ones red in the sidebar and the game's menus,
+# a player's own MENUCOLOR rules win over the app's, and headings stay plain.
+@options role:Priest,race:human,gender:female,align:neutral
+@wizard
+@config MENUCOLOR="holy water"=blue
+@config MENUCOLOR="garlic"=gray
+
+# The player's rule beats the app's green for the blessed holy water
+check sidebar.@holy water.style == blue
+# Gray is the core's ordinary text colour, so it looks like plain text
+check sidebar.@garlic.style == default
+# The app's rules still apply where the player has none
+check sidebar.@mace.style == green
+
+key ctrl-w
+enter cursed ring mail
+check sidebar.@ring mail.style == red
+
+type i
+check menu.@ring mail.style == red
+check menu.@mace.style == green
+check menu.headings.style !contains background
+key escape

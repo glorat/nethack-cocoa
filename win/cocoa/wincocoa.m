@@ -42,7 +42,7 @@
 #import "NhItem.h"
 #import "NhItemGroup.h"
 #import "NhMenuWindow.h"
-#import "NhStatusWindow.h"
+#import "NhStatus.h"
 #import "NSString+Z.h"
 #import "NhTextInputEvent.h"
 #import "PlayerName.h"
@@ -59,11 +59,11 @@
 struct window_procs cocoa_procs = {
 "cocoa",
 wp_cocoa,
-WC_COLOR|WC_HILITE_PET|
+WC_COLOR|WC_HILITE_PET|WC_INVERSE|
 WC_ASCII_MAP|WC_TILED_MAP|
 WC_FONT_MAP|WC_TILE_FILE|WC_TILE_WIDTH|WC_TILE_HEIGHT|
 WC_PLAYER_SELECTION|WC_SPLASH_SCREEN,
-0L,
+WC2_FLUSH_STATUS,
 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},   /* color availability */
 cocoa_init_nhwindows,
 cocoa_player_selection,
@@ -109,10 +109,10 @@ cocoa_outrip,
 cocoa_preference_update,
 cocoa_getmsghistory,
 cocoa_putmsghistory,
-genl_status_init,
-genl_status_finish,
-genl_status_enablefield,
-genl_status_update,
+cocoa_status_init,
+cocoa_status_finish,
+cocoa_status_enablefield,
+cocoa_status_update,
 win_can_suspend,
 cocoa_update_inventory,
 cocoa_ctrl_nhwindow,
@@ -221,6 +221,32 @@ void cocoa_decgraphics_mode_callback()
 
 #pragma mark nethack window API
 
+// the first matching rule wins, so the player's own rules go ahead of these
+static void AddDefaultMenuColors(void)
+{
+	static const char * rules[] = {
+		"\" blessed \"=green",
+		"\" holy water\"=green",
+		"\" cursed \"=red",
+		"\" unholy water\"=red",
+	};
+	struct menucoloring * players = gm.menu_colorings;
+	gm.menu_colorings = NULL;
+	for ( int i = 0; i < SIZE(rules); ++i ) {
+		char rule[BUFSZ];
+		Strcpy(rule, rules[i]);
+		(void) add_menu_coloring(rule);
+	}
+	if ( players ) {
+		struct menucoloring * last = players;
+		while ( last->next )
+			last = last->next;
+		last->next = gm.menu_colorings;
+		gm.menu_colorings = players;
+	}
+	iflags.use_menu_color = TRUE;
+}
+
 void cocoa_init_nhwindows(int* argc, char** argv)
 {
 	//NSLog(@"init_nhwindows");
@@ -249,6 +275,10 @@ void cocoa_init_nhwindows(int* argc, char** argv)
 	// hardwire OPTIONS=time,showexp for issue 8
 	flags.time = TRUE;
 	flags.showexp = TRUE;
+
+	iflags.hilite_pet = TRUE;
+	iflags.hilite_pile = TRUE;
+	AddDefaultMenuColors();
 	
 	[[MainWindowController instance] initWindows];
 }
@@ -299,7 +329,7 @@ winid cocoa_create_nhwindow(int type)
 			w =  [NhWindow mapWindow];
 			break;
 		case NHW_STATUS:
-			w = [NhWindow statusWindow];
+			w = [[NhWindow alloc] initWithType:NHW_STATUS];
 			break;
 		case NHW_MESSAGE:
 			w = [NhWindow messageWindow];
@@ -338,7 +368,7 @@ void cocoa_destroy_nhwindow(winid wid)
 {
 	NhWindow * win = g_WindowDict[@(wid)];
 //	NSLog(@"destroy_nhwindow %x = %p", wid, win);
-	if (win != [NhWindow messageWindow] && win != [NhWindow statusWindow] && win != [NhWindow mapWindow]) {
+	if (win != [NhWindow messageWindow] && win != [NhWindow mapWindow]) {
 		[g_WindowDict removeObjectForKey:@(wid)];
 	}
 }
@@ -411,10 +441,13 @@ void cocoa_add_menu(winid wid, const glyph_info *glyphinfo, const ANY_P *identif
 	if (identifier->a_void) {
 		NhItem *i = [[NhItem alloc] initWithTitle:title
 									   identifier:*identifier accelerator:accelerator group_accel:group_accel glyph:glyph selected:presel];
+		i.color = clr;
+		i.attr = attr;
 		[win.currentItemGroup addItem:i];
 	} else {
 		NhItemGroup *g = [[NhItemGroup alloc] initWithTitle:title];
 		g.attr = attr;
+		g.color = clr;
 		[win addItemGroup:g];
 	}
 }
@@ -458,6 +491,7 @@ static NSArray<NhItem *> * UnlistedInventory(NhMenuWindow * win)
 }
 
 static BOOL s_buildingSidebar = NO;
+static void RefreshPeacefulMarks(void);
 
 int cocoa_select_menu(winid wid, int how, menu_item **selected)
 {
@@ -469,6 +503,7 @@ int cocoa_select_menu(winid wid, int how, menu_item **selected)
 		[[MainWindowController instance] setInventoryGroups:[win.itemGroups copy]];
 		return 0;
 	}
+	RefreshPeacefulMarks();
 	NhEvent * next = [[NhEventQueue instance] peek];
 	if ( how == PICK_ONE && [next isKindOfClass:[NhMenuPickEvent class]] ) {
 		[[NhEventQueue instance] nextEvent];
@@ -523,6 +558,123 @@ void cocoa_update_inventory(int arg)
 	[[MainWindowController instance] updateInventory];
 }
 
+#pragma mark status
+
+static NhStatus * s_status;
+// starting gear changes AC and stats before the first turn
+static BOOL s_showChanges;
+
+void cocoa_status_init(void)
+{
+	s_status = [[NhStatus alloc] init];
+	s_showChanges = NO;
+}
+
+void cocoa_status_finish(void)
+{
+	s_status = nil;
+}
+
+void cocoa_status_enablefield(int fld, const char *nm, const char *fmt, boolean enable)
+{
+	[s_status setEnabled:enable forField:fld];
+}
+
+static NSString * LevelText(NSString * desc)
+{
+	NSString * dungeon = @(svd.dungeons[u.uz.dnum].dname);
+	if ( ![desc hasPrefix:@"Dlvl:"] )
+		return [NSString stringWithFormat:@"%@: %@", dungeon, desc];
+	NSString * depth = [[desc substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+	int lvl = dunlev(&u.uz);
+	if ( lvl == depth.integerValue )
+		return [NSString stringWithFormat:@"%@: level %@", dungeon, depth];
+	return [NSString stringWithFormat:@"%@ %d: level %@", dungeon, lvl, depth];
+}
+
+static NSString * RoleText(NSString * alignment)
+{
+	return [NSString stringWithFormat:Upolyd ? @"%@ (%s) %s" : @"%@ %s %s",
+			alignment ?: @"", gu.urace.adj, pmname(&mons[u.umonnum], Ugender)];
+}
+
+// mirrors the core's major_troubles, minor_troubles and movement condition groups
+#define MAJOR_TROUBLES (BL_MASK_FOODPOIS | BL_MASK_GRAB | BL_MASK_INLAVA | BL_MASK_SLIME \
+						| BL_MASK_STONE | BL_MASK_STRNGL | BL_MASK_TERMILL)
+#define MINOR_TROUBLES (BL_MASK_BLIND | BL_MASK_CONF | BL_MASK_DEAF | BL_MASK_HALLU \
+						| BL_MASK_PARLYZ | BL_MASK_SUBMERGED | BL_MASK_STUN)
+#define MOVEMENT (BL_MASK_LEV | BL_MASK_FLY | BL_MASK_RIDE)
+
+static NSArray<NhStatusBadge *> * StatusBadges(NSString * hunger, NSString * encumbrance, unsigned long active)
+{
+	NSMutableArray * badges = [NSMutableArray array];
+	if ( hunger.length ) {
+		NhSeverity severity = u.uhs == SATIATED ? NhSeverityInfo
+			: u.uhs == HUNGRY ? NhSeverityCaution
+			: u.uhs == WEAK ? NhSeverityWarning
+			: NhSeverityDanger;
+		[badges addObject:[NhStatusBadge badgeWithText:hunger severity:severity]];
+	}
+	if ( encumbrance.length ) {
+		int cap = near_capacity();
+		NhSeverity severity = cap == SLT_ENCUMBER ? NhSeverityCaution
+			: cap == MOD_ENCUMBER ? NhSeverityWarning
+			: NhSeverityDanger;
+		[badges addObject:[NhStatusBadge badgeWithText:encumbrance severity:severity]];
+	}
+	for ( int i = 0; i < CONDITION_COUNT; ++i ) {
+		const struct conditions_t * condition = &conditions[cond_idx[i]];
+		if ( !(active & condition->mask) )
+			continue;
+		NhSeverity severity = (condition->mask & MAJOR_TROUBLES) ? NhSeverityDanger
+			: (condition->mask & MINOR_TROUBLES) ? NhSeverityWarning
+			: (condition->mask & MOVEMENT) ? NhSeverityInfo
+			: NhSeverityCaution;
+		[badges addObject:[NhStatusBadge badgeWithText:@(condition->text[0]) severity:severity]];
+	}
+	return badges;
+}
+
+void cocoa_status_update(int fld, genericptr_t ptr, int chg, int percent, int color, unsigned long *colormasks)
+{
+	static unsigned long s_conditions;
+	NSCharacterSet * whitespace = [NSCharacterSet whitespaceCharacterSet];
+
+	s_status.turn = svm.moves;
+	if ( fld == BL_FLUSH || fld == BL_RESET ) {
+		s_status.levelText = LevelText([s_status valueForField:BL_LEVELDESC] ?: @"");
+		s_status.roleText = RoleText([s_status valueForField:BL_ALIGN]);
+		s_status.badges = StatusBadges([s_status valueForField:BL_HUNGER], [s_status valueForField:BL_CAP], s_conditions);
+		[[MainWindowController instance] updateStatus:[s_status copy]];
+		if ( program_state.in_moveloop )
+			s_showChanges = YES;
+		return;
+	}
+	if ( fld < 0 || fld >= MAXBLSTATS || !ptr )
+		return;
+	if ( fld == BL_CONDITION ) {
+		s_conditions = *(unsigned long *) ptr;
+		return;
+	}
+	NSString * value = [[NSString stringWithCString:(const char *) ptr encoding:NSISOLatin1StringEncoding] stringByTrimmingCharactersInSet:whitespace];
+	// gold comes with its symbol in front: "$:12"
+	if ( fld == BL_GOLD )
+		value = [value componentsSeparatedByString:@":"].lastObject;
+	[s_status setValue:value forField:fld];
+
+	switch ( fld ) {
+		case BL_STR: case BL_DX: case BL_CO: case BL_IN: case BL_WI: case BL_CH:
+		case BL_XP: case BL_HD:
+			if ( s_showChanges && chg )
+				[s_status noteChange:chg improved:chg > 0 forField:fld];
+			break;
+		case BL_AC:
+			if ( s_showChanges && chg )
+				[s_status noteChange:chg improved:chg < 0 forField:fld];
+			break;
+	}
+}
+
 void cocoa_mark_synch()
 {
 	//NSLog(@"mark_synch");
@@ -548,6 +700,18 @@ void cocoa_cliparound_window(winid wid, int x, int y)
 	}
 }
 
+// the core has no glyph flag for peaceful monsters
+static BOOL ShowsPeacefulMonster(coordxy x, coordxy y, int glyph)
+{
+	if ( Hallucination || !glyph_is_monster(glyph) || glyph_is_pet(glyph) || glyph_is_ridden_monster(glyph) )
+		return NO;
+	struct monst * mtmp = m_at(x, y);
+	int shown = glyph_to_mon(glyph);
+	return mtmp && mtmp->mpeaceful && !mtmp->mtame && M_AP_TYPE(mtmp) == M_AP_NOTHING
+		&& (monsndx(mtmp->data) == shown || (shown == PM_LONG_WORM_TAIL && mtmp->data == &mons[PM_LONG_WORM]))
+		&& canspotmon(mtmp);
+}
+
 void cocoa_print_glyph(winid wid, coordxy x, coordxy y, const glyph_info *glyphinfo,
 					   const glyph_info *bkglyphinfo)
 {
@@ -555,7 +719,33 @@ void cocoa_print_glyph(winid wid, coordxy x, coordxy y, const glyph_info *glyphi
 	int bkglyph = bkglyphinfo ? bkglyphinfo->glyph : GLYPH_UNEXPLORED;
 	//NSLog(@"print_glyph %x %d,%d", wid, x, y);
 	NhMapWindow * win = (NhMapWindow *) g_WindowDict[@(wid)];
-	[win printGlyph:glyph background:bkglyph atX:x y:y];
+	unsigned flags = glyphinfo->gm.glyphflags;
+	if ( ShowsPeacefulMonster(x, y, glyph) )
+		flags |= kMapPeaceful;
+	[win printGlyph:glyph background:bkglyph flags:flags atX:x y:y];
+}
+
+// a monster can be angered or pacified without being redrawn
+static void RefreshPeacefulMarks(void)
+{
+	if ( !program_state.in_moveloop || program_state.gameover )
+		return;
+	NhMapWindow * map = (NhMapWindow *) [NhWindow mapWindow];
+	BOOL changed = NO;
+	for ( coordxy y = 0; y < ROWNO; ++y ) {
+		for ( coordxy x = 1; x < COLNO; ++x ) {
+			int glyph = [map glyphAtX:x y:y];
+			if ( glyph == kNoGlyph )
+				continue;
+			BOOL peaceful = ShowsPeacefulMonster(x, y, glyph);
+			if ( peaceful != (([map flagsAtX:x y:y] & kMapPeaceful) != 0) ) {
+				[map setPeaceful:peaceful atX:x y:y];
+				changed = YES;
+			}
+		}
+	}
+	if ( changed )
+		cocoa_display_nhwindow(WIN_MAP, FALSE);
 }
 
 void cocoa_raw_print(const char *str)
@@ -575,6 +765,7 @@ void cocoa_raw_print_bold(const char *str)
 
 int cocoa_nhgetch(void)
 {
+	RefreshPeacefulMarks();
 	[[MainWindowController instance] refreshAllViews];
 	for (;;) {
 		NhEvent *e = [[NhEventQueue instance] nextEvent];
@@ -595,6 +786,7 @@ int cocoa_nh_poskey(coordxy *x, coordxy *y, int *mod)
 		cocoa_update_inventory(0);
 		[[MainWindowController instance] updateWizardMenu];
 	}
+	RefreshPeacefulMarks();
 	[[MainWindowController instance] refreshAllViews];
 	NhEvent *e;
 	do {
@@ -636,6 +828,7 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 		}
 	}
 	
+	RefreshPeacefulMarks();
 	yn_number = 0;
 	NSString * text = [NSString stringWithFormat:@"%s", question];
 	if ( choices && choices[0] ) {
@@ -685,6 +878,7 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 void cocoa_getlin(const char *prompt, char *line)
 {
 	//NSLog(@"getlin %s", prompt);
+	RefreshPeacefulMarks();
 	[[MainWindowController instance] refreshAllViews];
 	[[MainWindowController instance] getLineWithPrompt:[NSString stringWithCString:prompt encoding:NSISOLatin1StringEncoding]];
 	// keys typed before the window opened can't be the answer
@@ -704,6 +898,7 @@ void cocoa_getlin(const char *prompt, char *line)
 int cocoa_get_ext_cmd()
 {
 	//NSLog(@"get_ext_cmd");
+	RefreshPeacefulMarks();
 	// a menu item queues its command name after the '#'; otherwise ask
 	if ( ![[[NhEventQueue instance] peek] isKindOfClass:[NhTextInputEvent class]] )
 		[[MainWindowController instance] showExtendedCommands];

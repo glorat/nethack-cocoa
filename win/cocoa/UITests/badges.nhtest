@@ -1,0 +1,41 @@
+# Hunger, encumbrance and status conditions show as badges in the core's order,
+# coloured by how much trouble they mean, and go away when they end.
+@options role:Priest,race:human,gender:female,align:neutral
+@wizard
+
+# Two loadstones are too heavy for anyone; how heavy depends on the hero's strength,
+# and each level has its own severity. It shows once the turn ends.
+key ctrl-w
+enter loadstone
+key ctrl-w
+enter loadstone
+pass 1
+check status.badges matches ^(Burdened:caution|Stressed:warning|Strained:danger|Overtaxed:danger)$
+
+type #
+enter wizintrinsic
+pick stunned
+pick confused
+key return
+check status.badges matches ^[A-Za-z]+:[a-z]+ Conf:warning Stun:warning$
+
+# Deadly conditions are danger and come first
+type #
+enter wizintrinsic
+pick petrifying
+key return
+check status.badges matches ^[A-Za-z]+:[a-z]+ Stone:danger Conf:warning Stun:warning$
+
+# Levitating is only information
+type #
+enter wizintrinsic
+pick levitating
+key return
+check status.badges matches ^([A-Za-z]+:[a-z]+ )?Stone:danger Conf:warning Lev:info Stun:warning$
+
+# Turning into a stone golem cures the stoning, and its badge goes
+type #
+enter polyself
+enter stone golem
+check messages contains You no longer seem to be petrifying
+check status.badges !contains Stone

@@ -23,11 +23,65 @@
  */
 
 #import "StatsView.h"
+#import "NhStatus.h"
 
 #import "hack.h"
 
 
+@interface StatusBadgeView : NSView
+- (instancetype)initWithBadge:(NhStatusBadge *)badge;
+@end
+
+@implementation StatusBadgeView
+{
+	NhStatusBadge	*	badge;
+	NSDictionary	*	attributes;
+}
+
+static const CGFloat kBadgePadding = 6.0;
+
+- (instancetype)initWithBadge:(NhStatusBadge *)b
+{
+	if ( self = [super initWithFrame:NSZeroRect] ) {
+		badge = b;
+		NSColor * text = b.severity == NhSeverityInfo ? [NSColor labelColor]
+			: b.severity == NhSeverityCaution ? [NSColor blackColor]
+			: [NSColor whiteColor];
+		attributes = @{ NSFontAttributeName : [NSFont systemFontOfSize:11 weight:NSFontWeightSemibold],
+						NSForegroundColorAttributeName : text };
+		self.translatesAutoresizingMaskIntoConstraints = NO;
+		self.toolTip = b.text;
+	}
+	return self;
+}
+
+- (NSSize)intrinsicContentSize
+{
+	NSSize text = [badge.text sizeWithAttributes:attributes];
+	return NSMakeSize(ceil(text.width) + 2 * kBadgePadding, ceil(text.height) + 2);
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+	NSColor * fill = badge.severity == NhSeverityDanger ? [NSColor systemRedColor]
+		: badge.severity == NhSeverityWarning ? [NSColor systemOrangeColor]
+		: badge.severity == NhSeverityCaution ? [NSColor systemYellowColor]
+		: [NSColor quaternaryLabelColor];
+	[fill setFill];
+	CGFloat radius = self.bounds.size.height / 2;
+	[[NSBezierPath bezierPathWithRoundedRect:self.bounds xRadius:radius yRadius:radius] fill];
+	NSSize text = [badge.text sizeWithAttributes:attributes];
+	[badge.text drawAtPoint:NSMakePoint(kBadgePadding, round((self.bounds.size.height - text.height) / 2)) withAttributes:attributes];
+}
+
+@end
+
+
 @implementation StatsView
+{
+	NSStackView	*	badges;
+	NSMutableDictionary<NSNumber *, NSTextField *> *	changeMarks;
+}
 
 
 - (id)initWithFrame:(NSRect)frame {
@@ -63,147 +117,100 @@
 -(void)awakeFromNib
 {
 	[self clearAll];
+
+	badges = [[NSStackView alloc] init];
+	badges.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+	badges.spacing = 4;
+	badges.translatesAutoresizingMaskIntoConstraints = NO;
+	[badges setClippingResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+	[self addSubview:badges];
+	[NSLayoutConstraint activateConstraints:@[
+		[badges.leadingAnchor constraintEqualToAnchor:state.leadingAnchor],
+		[badges.centerYAnchor constraintEqualToAnchor:state.centerYAnchor],
+		[badges.trailingAnchor constraintLessThanOrEqualToAnchor:self.trailingAnchor constant:-8],
+	]];
+	// keeps its place in the layout for the badges
+	state.hidden = YES;
+
+	changeMarks = [NSMutableDictionary dictionary];
 }
 
--(BOOL)setItems:(NSString *)text
+// drawn in the gap after the value so the grid columns don't shift
+-(void)showChange:(int)change improved:(BOOL)improved forField:(int)field after:(NSTextField *)value
 {
-	NSCharacterSet * whitespace = [NSCharacterSet whitespaceCharacterSet];
-	
-
-	// Bryce the Troglodyte           St:18 Dx:17 Co:15 In:9 Wi:8 Ch:8 Lawful
-
-	// Home 1 $:218 HP:173(173) Pw:36(36) AC:-7 Xp:16/366949 T:45071 Hungry   Blind Burdened
-	// Dlvl:17 *:143 HP:199(199) Pw:57(57) AC:-9 Xp:20/5124335 T:52985 Fainting
-	// Dlvl:1 $:0 HP:16(16) Pw:2(2) AC:8 Xp:1/0 T:1
-	// Dlvl:8 $:0 HP:104(116) Pw:17(17) AC:-7 Xp:10/5729 Satiated Burdened Stun T:13845
-
-	nhsym goldch = gs.showsyms[COIN_CLASS + SYM_OFF_O];
-	NSString * Gold = [NSString stringWithFormat:@"%c:", goldch];
-	
-	if ( [text rangeOfString:Gold].location != NSNotFound ) {
-		
-		// Dlvl:2 $:1977 HP:99(99) Pw:17(17) AC:-2 Xp:9/3619 T:7830
-		NSScanner * scanner = [NSScanner scannerWithString:text];
-		NSString * value = nil;
-		int current, maximum;
-
-		[scanner scanUpToString:Gold intoString:&value];
-		if ( [value hasPrefix:@"Dlvl:"] ) {
-			value = [value substringFromIndex:5];
-			value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-			NSString * nm = [NSString stringWithUTF8String:svd.dungeons[u.uz.dnum].dname];
-			int lvl = dunlev( &u.uz );
-			if ( lvl == [value integerValue] ) {
-				value = [NSString stringWithFormat:@"%@: level %@", nm, value];
-			} else {
-				value = [NSString stringWithFormat:@"%@ %d: level %@", nm, lvl, value];
-			}
-		} else {
-			NSString * nm = [NSString stringWithUTF8String:svd.dungeons[u.uz.dnum].dname];
-			value = [NSString stringWithFormat:@"%@: %@", nm, value];			
-		}
-		
-		[dlvl setStringValue:value];
-		
-		[scanner scanString:Gold intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[gold setStringValue:value];
-		
-		[scanner scanString:@"HP:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[hp setStringValue:value];
-		sscanf( [value UTF8String], "%d(%d)", &current, &maximum );
-		[hpMeter setMaxValue:maximum];
-		[hpMeter setIntValue:current];
-		[hpMeter setWarningValue:maximum  * 2/3.0];
-		[hpMeter setCriticalValue:maximum * 1/3.0];
-		 
-		[scanner scanString:@"Pw:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[pw setStringValue:value];
-		sscanf( [value UTF8String], "%d(%d)", &current, &maximum );
-		[pwMeter setMaxValue:maximum];
-		[pwMeter setIntValue:current];
-		[pwMeter setWarningValue:maximum  * 2/3.0];
-		[pwMeter setCriticalValue:maximum * 1/3.0];
-		
-		[scanner scanString:@"AC:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[ac setStringValue:value];
-		
-		if ( [scanner scanString:@"Xp:" intoString:&value] ) {	// user can change this using the "showexp" option, or be being polymorphed
-			// 10/9999
-			[xpLabel setStringValue:value];
-			[scanner scanUpToString:@"/" intoString:&value];
-			[level setStringValue:value];
-			[scanner scanString:@"/" intoString:NULL];
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[xp setStringValue:value];
-		} else if ( [scanner scanString:@"Exp:" intoString:&value] ) {
-			[xpLabel setStringValue:value];
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[level setStringValue:value];
-			[xp setStringValue:@""];
-		} else if ( [scanner scanString:@"HD:" intoString:&value] ) {
-			// polymorphed HD
-			[xpLabel setStringValue:value];
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[xp setStringValue:value];
-			[level setStringValue:@""];
-		} else {
-			assert(NO);
-		}
-
-		if ( [scanner scanString:@"T:" intoString:NULL] ) {	// user can turn this off using the "time" option
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[turn setStringValue:value];
-		} else {
-			[turn setStringValue:@""];
-		}
-
-		value = [[scanner string] substringFromIndex:[scanner scanLocation]];
-		value = [value stringByTrimmingCharactersInSet:whitespace];
-		[state setStringValue:value];
-
-	} else {
-
-		// foo the bar St:18/02 Dx:18 Co:18 In:7 Ch:6 Neutral
-		NSScanner * scanner = [NSScanner scannerWithString:text];
-		NSString * value = nil;
-		// foo the bar
-		[scanner scanUpToString:@" St:" intoString:&value];
-		[name setStringValue:value];
-		
-		[scanner scanString:@"St:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[str setStringValue:value];
-		
-		[scanner scanString:@"Dx:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[dex setStringValue:value];
-		
-		[scanner scanString:@"Co:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[con setStringValue:value];
-		
-		[scanner scanString:@"In:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[iq setStringValue:value];
-		
-		[scanner scanString:@"Wi:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[wis setStringValue:value];
-		
-		[scanner scanString:@"Ch:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[cha setStringValue:value];
-		
-		value = [[scanner string] substringFromIndex:[scanner scanLocation]];
-		value = [value stringByTrimmingCharactersInSet:whitespace];
-		value = [value stringByAppendingFormat:Upolyd?@" (%s) %s":@" %s %s", gu.urace.adj, pmname(&mons[u.umonnum], Ugender)];
-		[role setStringValue:value];
+	NSTextField * mark = changeMarks[@(field)];
+	if ( !mark && change ) {
+		mark = [NSTextField labelWithString:@""];
+		mark.font = [NSFont boldSystemFontOfSize:[NSFont smallSystemFontSize]];
+		mark.translatesAutoresizingMaskIntoConstraints = NO;
+		[self addSubview:mark];
+		[NSLayoutConstraint activateConstraints:@[
+			[mark.leadingAnchor constraintEqualToAnchor:value.trailingAnchor constant:1],
+			[mark.firstBaselineAnchor constraintEqualToAnchor:value.firstBaselineAnchor],
+		]];
+		changeMarks[@(field)] = mark;
 	}
-	return YES;
+	mark.hidden = change == 0;
+	mark.stringValue = change > 0 ? @"↑" : @"↓";
+	mark.textColor = improved ? [NSColor systemGreenColor] : [NSColor systemRedColor];
+}
+
+static void SetMeter(NSLevelIndicator * meter, int current, int maximum)
+{
+	[meter setMaxValue:maximum];
+	[meter setIntValue:current];
+	[meter setWarningValue:maximum * 2/3.0];
+	[meter setCriticalValue:maximum * 1/3.0];
+}
+
+-(void)updateWithStatus:(NhStatus *)status
+{
+	NSString * (^value)(int) = ^NSString *(int field) {
+		return [status valueForField:field] ?: @"";
+	};
+
+	[name setStringValue:value(BL_TITLE)];
+	[role setStringValue:status.roleText ?: @""];
+	[dlvl setStringValue:status.levelText ?: @""];
+	[gold setStringValue:value(BL_GOLD)];
+	[ac setStringValue:value(BL_AC)];
+
+	[hp setStringValue:[NSString stringWithFormat:@"%@(%@)", value(BL_HP), value(BL_HPMAX)]];
+	SetMeter(hpMeter, value(BL_HP).intValue, value(BL_HPMAX).intValue);
+	[pw setStringValue:[NSString stringWithFormat:@"%@(%@)", value(BL_ENE), value(BL_ENEMAX)]];
+	SetMeter(pwMeter, value(BL_ENE).intValue, value(BL_ENEMAX).intValue);
+
+	if ( [status valueForField:BL_HD] ) {
+		[xpLabel setStringValue:@"HD:"];
+		[xp setStringValue:value(BL_HD)];
+		[level setStringValue:@""];
+	} else {
+		[xpLabel setStringValue:@"Xp:"];
+		[level setStringValue:value(BL_XP)];
+		[xp setStringValue:value(BL_EXP)];
+	}
+
+	[str setStringValue:value(BL_STR)];
+	[dex setStringValue:value(BL_DX)];
+	[con setStringValue:value(BL_CO)];
+	[iq setStringValue:value(BL_IN)];
+	[wis setStringValue:value(BL_WI)];
+	[cha setStringValue:value(BL_CH)];
+	[turn setStringValue:value(BL_TIME)];
+	NSDictionary<NSNumber *, NSTextField *> * values = @{
+		@(BL_STR) : str, @(BL_DX) : dex, @(BL_CO) : con, @(BL_IN) : iq, @(BL_WI) : wis, @(BL_CH) : cha,
+		@(BL_AC) : ac, @(BL_XP) : level, @(BL_HD) : xp,
+	};
+	for ( NSNumber * field in values ) {
+		BOOL improved = NO;
+		int change = [status changeForField:field.intValue improved:&improved];
+		[self showChange:change improved:improved forField:field.intValue after:values[field]];
+	}
+
+	for ( NSView * view in badges.arrangedSubviews )
+		[view removeFromSuperview];
+	for ( NhStatusBadge * badge in status.badges )
+		[badges addArrangedSubview:[[StatusBadgeView alloc] initWithBadge:badge]];
 }
 
 @end

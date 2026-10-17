@@ -7,6 +7,7 @@
 #import "NhItem.h"
 #import "NhItemGroup.h"
 #import "TileSet.h"
+#import "NhTextStyle.h"
 
 static const CGFloat kTileSize		= 24.0;
 static const CGFloat kMargin		= 10.0;
@@ -14,7 +15,7 @@ static const CGFloat kMargin		= 10.0;
 @implementation InventoryView
 {
 	NSTableView		*	tableView;
-	NSMutableArray	*	rows;	// NSString for a heading, NhItem for an item
+	NSMutableArray	*	rows;	// NSAttributedString for a heading, NhItem for an item
 }
 
 - (instancetype)initWithFrame:(NSRect)frame
@@ -69,8 +70,11 @@ static const CGFloat kMargin		= 10.0;
 {
 	[rows removeAllObjects];
 	for ( NhItemGroup * group in groups ) {
-		if ( !group.dummy && group.title.length )
-			[rows addObject:[group.title stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]];
+		if ( !group.dummy && group.title.length ) {
+			NSString * title = [group.title stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+			NSDictionary * attributes = NhTextAttributes(group.color, ATR_NONE, [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold]);
+			[rows addObject:[[NSAttributedString alloc] initWithString:title attributes:attributes]];
+		}
 		[rows addObjectsFromArray:group.items];
 	}
 	[tableView reloadData];
@@ -96,7 +100,7 @@ static const CGFloat kMargin		= 10.0;
 
 - (BOOL)tableView:(NSTableView *)tv isGroupRow:(NSInteger)r
 {
-	return [rows[r] isKindOfClass:[NSString class]];
+	return ![rows[r] isKindOfClass:[NhItem class]];
 }
 
 - (BOOL)tableView:(NSTableView *)tv shouldSelectRow:(NSInteger)r
@@ -112,9 +116,8 @@ static const CGFloat kMargin		= 10.0;
 - (NSView *)tableView:(NSTableView *)tv viewForTableColumn:(NSTableColumn *)column row:(NSInteger)r
 {
 	NSTableCellView * cell = [[NSTableCellView alloc] init];
-	if ( [rows[r] isKindOfClass:[NSString class]] ) {
-		NSTextField * label = [NSTextField labelWithString:rows[r]];
-		label.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
+	if ( ![rows[r] isKindOfClass:[NhItem class]] ) {
+		NSTextField * label = [NSTextField labelWithAttributedString:rows[r]];
 		label.translatesAutoresizingMaskIntoConstraints = NO;
 		[cell addSubview:label];
 		[NSLayoutConstraint activateConstraints:@[
@@ -140,8 +143,11 @@ static const CGFloat kMargin		= 10.0;
 	NSString * text = [item.title stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
 	if ( item.detail )
 		text = [text stringByAppendingFormat:@" (%@)", item.detail];
-	NSTextField * name = [NSTextField labelWithString:text];
-	name.font = [NSFont systemFontOfSize:13];
+	NSMutableParagraphStyle * style = [[NSMutableParagraphStyle alloc] init];
+	style.lineBreakMode = NSLineBreakByTruncatingTail;
+	NSMutableDictionary * attributes = [NhTextAttributes(item.color, item.attr, [NSFont systemFontOfSize:13]) mutableCopy];
+	attributes[NSParagraphStyleAttributeName] = style;
+	NSTextField * name = [NSTextField labelWithAttributedString:[[NSAttributedString alloc] initWithString:text attributes:attributes]];
 	name.lineBreakMode = NSLineBreakByTruncatingTail;
 	name.toolTip = text;
 	name.translatesAutoresizingMaskIntoConstraints = NO;

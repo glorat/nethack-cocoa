@@ -55,6 +55,10 @@ void cocoa_add_menu(winid wid, const glyph_info *glyphinfo, const ANY_P *identif
 void cocoa_end_menu(winid wid, const char *prompt);
 int cocoa_select_menu(winid wid, int how, menu_item **menu_list);
 void cocoa_update_inventory(int arg);
+void cocoa_status_init(void);
+void cocoa_status_finish(void);
+void cocoa_status_enablefield(int fld, const char *nm, const char *fmt, boolean enable);
+void cocoa_status_update(int fld, genericptr_t ptr, int chg, int percent, int color, unsigned long *colormasks);
 void cocoa_mark_synch(void);
 void cocoa_wait_synch(void);
 void cocoa_cliparound(int x, int y);

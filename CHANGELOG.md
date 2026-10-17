@@ -2,6 +2,21 @@
 
 Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [release notes](https://www.nethack.org/).
 
+## Unreleased
+
+### Added
+
+- Blessed items are green and cursed items red in menus and the inventory sidebar.
+- Menus and the inventory sidebar show the colors and highlighting set by the menucolors option.
+- The map marks peaceful monsters and your steed.
+- The map marks item piles and monsters you sense but can't see.
+- Hunger, encumbrance and status conditions show as colored badges, with deadly ones in red.
+- An arrow next to a stat, AC or level shows for a few turns when it goes up or down.
+
+### Changed
+
+- Blue, green and brown are easier to tell apart on the ASCII map.
+
 ## 5.0.0-5 (2026-10-17)
 
 ### Added

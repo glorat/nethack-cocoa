@@ -1,0 +1,20 @@
+# Clicks on the inventory, the Wearing panel and the map do what the player expects.
+@options role:Priest,race:human,gender:female,align:neutral
+
+# An item in the sidebar or the Wearing panel opens the actions for that item
+click sidebar a
+check dialog contains Do what with the mace?
+key escape
+click wearing shield
+check dialog contains Do what with the small shield?
+key escape
+check status.turn == 1
+
+# A click on the next square moves the hero there
+click map-near floor of a room
+check status.turn == 2
+
+# A click on unexplored ground far away does nothing, rather than guessing a route
+click map-unexplored
+check dialog == none
+check status.turn == 2

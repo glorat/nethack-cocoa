@@ -36,6 +36,7 @@
 @class PlayerSelectionWindowController;
 @class NotesWindowController;
 @class StatsView;
+@class NhStatus;
 @class EquipmentView;
 @class InventoryView;
 @class NetHackCocoaAppDelegate;
@@ -91,6 +92,7 @@
 - (void)showYnQuestion:(NhYnQuestion *)q;
 - (void)updateWizardMenu;
 - (void)refreshMessages;
+- (void)updateStatus:(NhStatus *)status;
 // gets called when core waits for input
 - (void)refreshAllViews;
 - (void)displayWindow:(NhWindow *)w;

@@ -44,6 +44,7 @@
 #import "ExtCommandInput.h"
 #import "PlayerSelectionWindowController.h"
 #import "StatsView.h"
+#import "NhStatus.h"
 #import "TileSet.h"
 #import "NetHackCocoaAppDelegate.h"
 #import "EquipmentView.h"
@@ -603,11 +604,16 @@ static const CGFloat kMinWindowWidth = 637;
 		if (rows > 0) {
 			[messagesView scrollRowToVisible:rows-1];
 		}
-		// update status window
-		for ( NSString * text in [[NhWindow statusWindow] messages] ) {
-			[statsView setItems:text];
-		}
 	}
+}
+
+- (void)updateStatus:(NhStatus *)status
+{
+	if ( ![NSThread isMainThread] ) {
+		[self performSelectorOnMainThread:@selector(updateStatus:) withObject:status waitUntilDone:NO];
+		return;
+	}
+	[statsView updateWithStatus:status];
 }
 
 
@@ -629,6 +635,16 @@ static const CGFloat kMinWindowWidth = 637;
 	}
 }
 
+// counted only around the modal window itself: other blocking hand-offs return at once
+static void WhileGameWaits(BOOL gameBlocked, void (^runModal)(void))
+{
+	if ( gameBlocked )
+		[[NhEventQueue instance] gameWaitsOnWindow:YES];
+	runModal();
+	if ( gameBlocked )
+		[[NhEventQueue instance] gameWaitsOnWindow:NO];
+}
+
 - (void)showPlayerSelection
 {
 	if (![NSThread isMainThread]) {
@@ -636,7 +652,7 @@ static const CGFloat kMinWindowWidth = 637;
 		[self performSelectorOnMainThread:@selector(showPlayerSelection) withObject:nil waitUntilDone:YES];
 		[self.appDelegate lockNethackCore];
 	} else {
-		[showPlayerSelection runModal];
+		WhileGameWaits(YES, ^{ [showPlayerSelection runModal]; });
 	}	
 }
 
@@ -691,14 +707,10 @@ static const CGFloat kMinWindowWidth = 637;
 			[self refreshMessages];
 		} else if (w.type == NHW_MAP) {
 			[mainView setNeedsDisplay:YES];
-		} else if ( w.type == NHW_STATUS ) {
-			for ( NSString * text in [w messages] ) {
-				[statsView setItems:text];
-			}
 		} else {
 			NSString * text = [w text];
 			if ( [text length] ) {
-				[MessageWindowController messageWindowWithText:text];
+				WhileGameWaits(w.blocking, ^{ [MessageWindowController messageWindowWithText:text]; });
 			}
 		}
 	}
@@ -711,7 +723,7 @@ static const CGFloat kMinWindowWidth = 637;
 		[self performSelectorOnMainThread:@selector(showMenuWindow:) withObject:w waitUntilDone:blocking];
 		[self.appDelegate lockNethackCore];
 	} else {
-		[MenuWindowController menuWindowWithMenu:w];
+		WhileGameWaits(w.blocking, ^{ [MenuWindowController menuWindowWithMenu:w]; });
 	}
 }
 

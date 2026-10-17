@@ -1,0 +1,17 @@
+# Saving quits the app cleanly, and the restored game shows the saved state
+# with no changes marked.
+@options role:Priest,race:human,gender:female,align:neutral
+
+type T
+pick small shield
+check status.ac == 8
+type S
+expect-exit
+@relaunch
+check messages contains welcome back to NetHack!
+check dialog == none
+check status.ac == 8
+check status.marks == ""
+check wearing.shield == shield
+check sidebar.@small shield contains small shield
+check sidebar.@holy water.style == green

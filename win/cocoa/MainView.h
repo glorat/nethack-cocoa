@@ -24,6 +24,14 @@
 
 #import <Cocoa/Cocoa.h>
 
+typedef NS_OPTIONS(NSUInteger, MapMarks) {
+	MapMarkPet		= 1 << 0,
+	MapMarkPile		= 1 << 1,
+	MapMarkPeaceful	= 1 << 2,
+	MapMarkRidden	= 1 << 3,
+	MapMarkDetected	= 1 << 4,
+};
+
 @class MapView;
 @class DirectionPad;
 
@@ -48,6 +56,7 @@
 
 - (void)cliparoundX:(int)x y:(int)y;
 - (NSRect)screenRectForTileX:(int)x y:(int)y;
+- (MapMarks)marksAtX:(int)x y:(int)y;
 - (NSFont *)asciiFont;
 - (BOOL)setAsciiFont:(NSFont *)font;
 - (void)enableAsciiMode:(BOOL)enable;

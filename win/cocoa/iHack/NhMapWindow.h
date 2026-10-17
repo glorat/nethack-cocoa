@@ -30,19 +30,25 @@
 
 #define kNoGlyph (-1)
 
+// a map flag of ours alongside the core's MG_* glyph flags
+#define kMapPeaceful 0x80000000U
+
 @interface NhMapWindow : NhWindow {
 	
 	int glyphs[ROWNO][COLNO];
 	int bkglyphs[ROWNO][COLNO];
+	unsigned flags[ROWNO][COLNO];
 
 	int cursorX;
 	int cursorY;
 }
 
 - (id) initWithType:(int)t;
-- (void) printGlyph:(int)glyph background:(int)bkglyph atX:(int)x y:(int)y;
+- (void) printGlyph:(int)glyph background:(int)bkglyph flags:(unsigned)f atX:(int)x y:(int)y;
+- (void) setPeaceful:(BOOL)peaceful atX:(int)x y:(int)y;
 - (int) glyphAtX:(int)x y:(int)y;
 - (int) backgroundGlyphAtX:(int)x y:(int)y;
+- (unsigned) flagsAtX:(int)x y:(int)y;
 - (void)setCursX:(int)x y:(int)y;
 - (void)cursX:(int *)px y:(int *)py;
 		

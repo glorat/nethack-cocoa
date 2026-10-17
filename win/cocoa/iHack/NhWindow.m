@@ -26,12 +26,10 @@
 #include "hack.h"
 #import "NSString+Z.h"
 #import "NhMapWindow.h"
-#import "NhStatusWindow.h"
 #import "MainWindowController.h"
 
 
 static NhWindow *s_messageWindow = nil;
-static NhWindow *s_statusWindow = nil;
 static NhWindow *s_mapWindow = nil;
 
 @implementation NhWindow
@@ -44,13 +42,6 @@ static NhWindow *s_mapWindow = nil;
 		s_messageWindow = [[NhWindow alloc] initWithType:NHW_MESSAGE];
 	}
 	return s_messageWindow;
-}
-
-+ (NhWindow *)statusWindow {
-	if ( s_statusWindow == nil ) {
-		s_statusWindow = [[NhStatusWindow alloc] initWithType:NHW_STATUS];
-	}
-	return s_statusWindow;
 }
 
 + (NhWindow *)mapWindow {
