@@ -24,6 +24,8 @@
 
 #import <Cocoa/Cocoa.h>
 
+@class NhStatus;
+
 
 @interface StatsView : NSView {
 	IBOutlet NSTextField		*	name;
@@ -48,6 +50,6 @@
 	IBOutlet NSTextField		*	state;
 }
 
--(BOOL)setItems:(NSString *)text;
+-(void)updateWithStatus:(NhStatus *)status;
 
 @end

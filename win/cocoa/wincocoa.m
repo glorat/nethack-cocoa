@@ -42,7 +42,7 @@
 #import "NhItem.h"
 #import "NhItemGroup.h"
 #import "NhMenuWindow.h"
-#import "NhStatusWindow.h"
+#import "NhStatus.h"
 #import "NSString+Z.h"
 #import "NhTextInputEvent.h"
 #import "PlayerName.h"
@@ -63,7 +63,7 @@ WC_COLOR|WC_HILITE_PET|WC_INVERSE|
 WC_ASCII_MAP|WC_TILED_MAP|
 WC_FONT_MAP|WC_TILE_FILE|WC_TILE_WIDTH|WC_TILE_HEIGHT|
 WC_PLAYER_SELECTION|WC_SPLASH_SCREEN,
-0L,
+WC2_FLUSH_STATUS,
 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},   /* color availability */
 cocoa_init_nhwindows,
 cocoa_player_selection,
@@ -109,10 +109,10 @@ cocoa_outrip,
 cocoa_preference_update,
 cocoa_getmsghistory,
 cocoa_putmsghistory,
-genl_status_init,
-genl_status_finish,
-genl_status_enablefield,
-genl_status_update,
+cocoa_status_init,
+cocoa_status_finish,
+cocoa_status_enablefield,
+cocoa_status_update,
 win_can_suspend,
 cocoa_update_inventory,
 cocoa_ctrl_nhwindow,
@@ -329,7 +329,7 @@ winid cocoa_create_nhwindow(int type)
 			w =  [NhWindow mapWindow];
 			break;
 		case NHW_STATUS:
-			w = [NhWindow statusWindow];
+			w = [[NhWindow alloc] initWithType:NHW_STATUS];
 			break;
 		case NHW_MESSAGE:
 			w = [NhWindow messageWindow];
@@ -368,7 +368,7 @@ void cocoa_destroy_nhwindow(winid wid)
 {
 	NhWindow * win = g_WindowDict[@(wid)];
 //	NSLog(@"destroy_nhwindow %x = %p", wid, win);
-	if (win != [NhWindow messageWindow] && win != [NhWindow statusWindow] && win != [NhWindow mapWindow]) {
+	if (win != [NhWindow messageWindow] && win != [NhWindow mapWindow]) {
 		[g_WindowDict removeObjectForKey:@(wid)];
 	}
 }
@@ -556,6 +556,89 @@ void cocoa_update_inventory(int arg)
 		s_buildingSidebar = NO;
 	}
 	[[MainWindowController instance] updateInventory];
+}
+
+#pragma mark status
+
+static NhStatus * s_status;
+
+void cocoa_status_init(void)
+{
+	s_status = [[NhStatus alloc] init];
+}
+
+void cocoa_status_finish(void)
+{
+	s_status = nil;
+}
+
+void cocoa_status_enablefield(int fld, const char *nm, const char *fmt, boolean enable)
+{
+	[s_status setEnabled:enable forField:fld];
+}
+
+static NSString * LevelText(NSString * desc)
+{
+	NSString * dungeon = @(svd.dungeons[u.uz.dnum].dname);
+	if ( ![desc hasPrefix:@"Dlvl:"] )
+		return [NSString stringWithFormat:@"%@: %@", dungeon, desc];
+	NSString * depth = [[desc substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+	int lvl = dunlev(&u.uz);
+	if ( lvl == depth.integerValue )
+		return [NSString stringWithFormat:@"%@: level %@", dungeon, depth];
+	return [NSString stringWithFormat:@"%@ %d: level %@", dungeon, lvl, depth];
+}
+
+static NSString * RoleText(NSString * alignment)
+{
+	return [NSString stringWithFormat:Upolyd ? @"%@ (%s) %s" : @"%@ %s %s",
+			alignment ?: @"", gu.urace.adj, pmname(&mons[u.umonnum], Ugender)];
+}
+
+static NSString * ConditionText(unsigned long mask)
+{
+	static const struct { unsigned long mask; const char * name; } shown[] = {
+		{ BL_MASK_STONE, "Stone" }, { BL_MASK_SLIME, "Slime" }, { BL_MASK_STRNGL, "Strngl" },
+		{ BL_MASK_FOODPOIS, "FoodPois" }, { BL_MASK_TERMILL, "TermIll" }, { BL_MASK_BLIND, "Blind" },
+		{ BL_MASK_DEAF, "Deaf" }, { BL_MASK_STUN, "Stun" }, { BL_MASK_CONF, "Conf" },
+		{ BL_MASK_HALLU, "Hallu" }, { BL_MASK_LEV, "Lev" }, { BL_MASK_FLY, "Fly" }, { BL_MASK_RIDE, "Ride" },
+	};
+	NSMutableArray * names = [NSMutableArray array];
+	for ( int i = 0; i < SIZE(shown); ++i ) {
+		if ( mask & shown[i].mask )
+			[names addObject:@(shown[i].name)];
+	}
+	return [names componentsJoinedByString:@" "];
+}
+
+void cocoa_status_update(int fld, genericptr_t ptr, int chg, int percent, int color, unsigned long *colormasks)
+{
+	static unsigned long s_conditions;
+	NSCharacterSet * whitespace = [NSCharacterSet whitespaceCharacterSet];
+
+	if ( fld == BL_FLUSH || fld == BL_RESET ) {
+		s_status.levelText = LevelText([s_status valueForField:BL_LEVELDESC] ?: @"");
+		s_status.roleText = RoleText([s_status valueForField:BL_ALIGN]);
+		NSMutableArray * state = [NSMutableArray array];
+		for ( NSString * text in @[ [s_status valueForField:BL_HUNGER] ?: @"", [s_status valueForField:BL_CAP] ?: @"", ConditionText(s_conditions) ] ) {
+			if ( text.length )
+				[state addObject:text];
+		}
+		s_status.stateText = [state componentsJoinedByString:@" "];
+		[[MainWindowController instance] updateStatus:[s_status copy]];
+		return;
+	}
+	if ( fld < 0 || fld >= MAXBLSTATS || !ptr )
+		return;
+	if ( fld == BL_CONDITION ) {
+		s_conditions = *(unsigned long *) ptr;
+		return;
+	}
+	NSString * value = [[NSString stringWithCString:(const char *) ptr encoding:NSISOLatin1StringEncoding] stringByTrimmingCharactersInSet:whitespace];
+	// gold comes with its symbol in front: "$:12"
+	if ( fld == BL_GOLD )
+		value = [value componentsSeparatedByString:@":"].lastObject;
+	[s_status setValue:value forField:fld];
 }
 
 void cocoa_mark_synch()

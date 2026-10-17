@@ -42,7 +42,6 @@
 @property (nonatomic, assign) BOOL blocking;
 
 + (NhWindow *)messageWindow;
-+ (NhWindow *)statusWindow;
 + (NhWindow *)mapWindow;
 
 - (id)initWithType:(int)t;

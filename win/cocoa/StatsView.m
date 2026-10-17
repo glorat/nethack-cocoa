@@ -23,6 +23,7 @@
  */
 
 #import "StatsView.h"
+#import "NhStatus.h"
 
 #import "hack.h"
 
@@ -65,145 +66,49 @@
 	[self clearAll];
 }
 
--(BOOL)setItems:(NSString *)text
+static void SetMeter(NSLevelIndicator * meter, int current, int maximum)
 {
-	NSCharacterSet * whitespace = [NSCharacterSet whitespaceCharacterSet];
-	
+	[meter setMaxValue:maximum];
+	[meter setIntValue:current];
+	[meter setWarningValue:maximum * 2/3.0];
+	[meter setCriticalValue:maximum * 1/3.0];
+}
 
-	// Bryce the Troglodyte           St:18 Dx:17 Co:15 In:9 Wi:8 Ch:8 Lawful
+-(void)updateWithStatus:(NhStatus *)status
+{
+	NSString * (^value)(int) = ^NSString *(int field) {
+		return [status valueForField:field] ?: @"";
+	};
 
-	// Home 1 $:218 HP:173(173) Pw:36(36) AC:-7 Xp:16/366949 T:45071 Hungry   Blind Burdened
-	// Dlvl:17 *:143 HP:199(199) Pw:57(57) AC:-9 Xp:20/5124335 T:52985 Fainting
-	// Dlvl:1 $:0 HP:16(16) Pw:2(2) AC:8 Xp:1/0 T:1
-	// Dlvl:8 $:0 HP:104(116) Pw:17(17) AC:-7 Xp:10/5729 Satiated Burdened Stun T:13845
+	[name setStringValue:value(BL_TITLE)];
+	[role setStringValue:status.roleText ?: @""];
+	[dlvl setStringValue:status.levelText ?: @""];
+	[gold setStringValue:value(BL_GOLD)];
+	[ac setStringValue:value(BL_AC)];
 
-	nhsym goldch = gs.showsyms[COIN_CLASS + SYM_OFF_O];
-	NSString * Gold = [NSString stringWithFormat:@"%c:", goldch];
-	
-	if ( [text rangeOfString:Gold].location != NSNotFound ) {
-		
-		// Dlvl:2 $:1977 HP:99(99) Pw:17(17) AC:-2 Xp:9/3619 T:7830
-		NSScanner * scanner = [NSScanner scannerWithString:text];
-		NSString * value = nil;
-		int current, maximum;
+	[hp setStringValue:[NSString stringWithFormat:@"%@(%@)", value(BL_HP), value(BL_HPMAX)]];
+	SetMeter(hpMeter, value(BL_HP).intValue, value(BL_HPMAX).intValue);
+	[pw setStringValue:[NSString stringWithFormat:@"%@(%@)", value(BL_ENE), value(BL_ENEMAX)]];
+	SetMeter(pwMeter, value(BL_ENE).intValue, value(BL_ENEMAX).intValue);
 
-		[scanner scanUpToString:Gold intoString:&value];
-		if ( [value hasPrefix:@"Dlvl:"] ) {
-			value = [value substringFromIndex:5];
-			value = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-			NSString * nm = [NSString stringWithUTF8String:svd.dungeons[u.uz.dnum].dname];
-			int lvl = dunlev( &u.uz );
-			if ( lvl == [value integerValue] ) {
-				value = [NSString stringWithFormat:@"%@: level %@", nm, value];
-			} else {
-				value = [NSString stringWithFormat:@"%@ %d: level %@", nm, lvl, value];
-			}
-		} else {
-			NSString * nm = [NSString stringWithUTF8String:svd.dungeons[u.uz.dnum].dname];
-			value = [NSString stringWithFormat:@"%@: %@", nm, value];			
-		}
-		
-		[dlvl setStringValue:value];
-		
-		[scanner scanString:Gold intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[gold setStringValue:value];
-		
-		[scanner scanString:@"HP:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[hp setStringValue:value];
-		sscanf( [value UTF8String], "%d(%d)", &current, &maximum );
-		[hpMeter setMaxValue:maximum];
-		[hpMeter setIntValue:current];
-		[hpMeter setWarningValue:maximum  * 2/3.0];
-		[hpMeter setCriticalValue:maximum * 1/3.0];
-		 
-		[scanner scanString:@"Pw:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[pw setStringValue:value];
-		sscanf( [value UTF8String], "%d(%d)", &current, &maximum );
-		[pwMeter setMaxValue:maximum];
-		[pwMeter setIntValue:current];
-		[pwMeter setWarningValue:maximum  * 2/3.0];
-		[pwMeter setCriticalValue:maximum * 1/3.0];
-		
-		[scanner scanString:@"AC:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[ac setStringValue:value];
-		
-		if ( [scanner scanString:@"Xp:" intoString:&value] ) {	// user can change this using the "showexp" option, or be being polymorphed
-			// 10/9999
-			[xpLabel setStringValue:value];
-			[scanner scanUpToString:@"/" intoString:&value];
-			[level setStringValue:value];
-			[scanner scanString:@"/" intoString:NULL];
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[xp setStringValue:value];
-		} else if ( [scanner scanString:@"Exp:" intoString:&value] ) {
-			[xpLabel setStringValue:value];
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[level setStringValue:value];
-			[xp setStringValue:@""];
-		} else if ( [scanner scanString:@"HD:" intoString:&value] ) {
-			// polymorphed HD
-			[xpLabel setStringValue:value];
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[xp setStringValue:value];
-			[level setStringValue:@""];
-		} else {
-			assert(NO);
-		}
-
-		if ( [scanner scanString:@"T:" intoString:NULL] ) {	// user can turn this off using the "time" option
-			[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-			[turn setStringValue:value];
-		} else {
-			[turn setStringValue:@""];
-		}
-
-		value = [[scanner string] substringFromIndex:[scanner scanLocation]];
-		value = [value stringByTrimmingCharactersInSet:whitespace];
-		[state setStringValue:value];
-
+	if ( [status valueForField:BL_HD] ) {
+		[xpLabel setStringValue:@"HD:"];
+		[xp setStringValue:value(BL_HD)];
+		[level setStringValue:@""];
 	} else {
-
-		// foo the bar St:18/02 Dx:18 Co:18 In:7 Ch:6 Neutral
-		NSScanner * scanner = [NSScanner scannerWithString:text];
-		NSString * value = nil;
-		// foo the bar
-		[scanner scanUpToString:@" St:" intoString:&value];
-		[name setStringValue:value];
-		
-		[scanner scanString:@"St:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[str setStringValue:value];
-		
-		[scanner scanString:@"Dx:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[dex setStringValue:value];
-		
-		[scanner scanString:@"Co:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[con setStringValue:value];
-		
-		[scanner scanString:@"In:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[iq setStringValue:value];
-		
-		[scanner scanString:@"Wi:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[wis setStringValue:value];
-		
-		[scanner scanString:@"Ch:" intoString:NULL];
-		[scanner scanUpToCharactersFromSet:whitespace intoString:&value];
-		[cha setStringValue:value];
-		
-		value = [[scanner string] substringFromIndex:[scanner scanLocation]];
-		value = [value stringByTrimmingCharactersInSet:whitespace];
-		value = [value stringByAppendingFormat:Upolyd?@" (%s) %s":@" %s %s", gu.urace.adj, pmname(&mons[u.umonnum], Ugender)];
-		[role setStringValue:value];
+		[xpLabel setStringValue:@"Xp:"];
+		[level setStringValue:value(BL_XP)];
+		[xp setStringValue:value(BL_EXP)];
 	}
-	return YES;
+
+	[str setStringValue:value(BL_STR)];
+	[dex setStringValue:value(BL_DX)];
+	[con setStringValue:value(BL_CO)];
+	[iq setStringValue:value(BL_IN)];
+	[wis setStringValue:value(BL_WI)];
+	[cha setStringValue:value(BL_CH)];
+	[turn setStringValue:value(BL_TIME)];
+	[state setStringValue:status.stateText ?: @""];
 }
 
 @end
