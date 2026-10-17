@@ -1,0 +1,13 @@
+# The core's use_inverse option turns off the mark for monsters sensed but not seen.
+@options role:Priest,race:human,gender:female,align:neutral,!use_inverse
+@wizard
+
+key ctrl-g
+enter newt
+type #
+enter wizintrinsic
+pick blinded
+pick monster detection
+key return
+check map.count.newt >= 1
+check map.with.detected == ""

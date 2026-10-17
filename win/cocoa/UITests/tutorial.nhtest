@@ -1,0 +1,10 @@
+# The game's tutorial question is a short question with an answer button per choice,
+# answered by its key like in the terminal.
+@options role:Priest,race:human,gender:female,align:neutral
+@tutorial
+
+check dialog contains Do you want a tutorial?
+check menu.question == yes
+type n
+check dialog == none
+check status.turn == 1

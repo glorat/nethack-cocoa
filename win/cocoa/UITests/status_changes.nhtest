@@ -1,0 +1,40 @@
+# The status panel marks a stat, AC or level for three turns after it changes,
+# and swaps Xp for hit dice while polymorphed.
+@options role:Priest,race:human,gender:female,align:neutral
+@wizard
+
+# Taking off the shield makes AC worse: an up arrow, marked as worse
+type T
+pick small shield
+check status.ac == 8
+check status.mark.ac == up worse
+pass 1
+check status.mark.ac == up worse
+pass 2
+check status.mark.ac == ""
+
+# Putting it back on makes AC better: a down arrow
+type W
+pick small shield
+check status.ac == 7
+check status.mark.ac == down better
+
+# Raised attributes are marked as better, and nothing is marked as worse
+key ctrl-w
+enter blessed potion of gain ability
+key ctrl-i
+pick permanently identify
+key return
+type q
+pick gain ability
+check status.marks contains str:up better
+check status.marks !contains worse
+
+# While polymorphed the panel shows the form's hit dice instead of Xp
+type #
+enter polyself
+enter stone golem
+check status.name == Wizard the Stone Golem
+check status.xplabel == HD:
+check status.xp == 14
+check status.level == ""

@@ -1,0 +1,12 @@
+# Riding marks the steed under the hero and shows a Ride badge.
+@options role:Knight,race:human,gender:female,align:lawful
+@wizard
+
+type #
+enter ride
+toward pony
+# wizard mode offers to skip the chance of slipping
+type y
+check map.0,0 == pony
+check map.0,0.marks contains ridden
+check status.badges contains Ride:info

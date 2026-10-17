@@ -1,0 +1,39 @@
+# A new game opens straight into play with every panel filled in.
+@options role:Priest,race:human,gender:female,align:neutral
+
+# Role, race, gender and alignment all come from the options, so there is no role picker
+check dialog == none
+
+# The status panel shows the core's fields; gold is the amount without its "$:" prefix
+check status.name == Uitest the Aspirant
+check status.role == Neutral human priestess
+check status.dlvl == The Dungeons of Doom: level 1
+check status.hp matches ^[0-9]+\([0-9]+\)$
+check status.level == 1
+check status.xplabel == Xp:
+check status.xp == 0
+check status.ac == 7
+check status.gold == 0
+check status.turn == 1
+# starting gear changes AC before the first turn, which must not show as a change
+check status.marks == ""
+check status.badges == ""
+
+# The Wearing panel is filled before the first move
+check wearing.weapon contains mace
+check wearing.shield contains small shield
+check wearing.cloak contains robe
+
+# The sidebar lists the starting kit with the app's blessed/cursed colours, under plain headings
+check sidebar.@mace.style == green
+check sidebar.@holy water.style == green
+check sidebar.@garlic.style == default
+check sidebar.headings.style !contains background
+
+# The cursor is on the hero, tiles have the floor drawn under them, and the pet is marked
+check map.cursor == 0,0
+check map.0,0.bg != ""
+check map.with.pet matches ^(kitten|little dog)$
+
+# The bundled 128px tiles loaded (a Git LFS pointer in place of the PNG is rejected)
+check tileset.size == 128x128

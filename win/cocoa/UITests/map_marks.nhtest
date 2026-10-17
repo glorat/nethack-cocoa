@@ -1,0 +1,45 @@
+# The map marks item piles, peaceful monsters and monsters sensed but not seen.
+@options role:Priest,race:human,gender:female,align:neutral,pettype:none
+@wizard
+
+# Two items dropped on one square make a pile, marked once the hero steps off it
+type d
+pick garlic
+type d
+pick wolfsbane
+toward floor of a room
+check map.with.pile contains sprig of wolfsbane
+
+# A peaceful monster is marked until it is angered
+key ctrl-g
+enter peaceful watchman
+check map.find.watchman == peaceful
+type F
+toward watchman
+check messages.new contains The watchman gets angry!
+check map.count.watchman >= 1
+check map.find.watchman == ""
+
+# A peaceful long worm's tail is marked as well as its head
+key ctrl-g
+enter peaceful long worm
+key ctrl-g
+enter peaceful long worm
+key ctrl-g
+enter peaceful long worm
+key ctrl-g
+enter peaceful long worm
+key ctrl-g
+enter peaceful long worm
+check map.count.long worm tail >= 1
+check map.find.long worm tail matches ^peaceful(\|peaceful)*$
+
+# Blind with monster detection, the newt is sensed rather than seen
+key ctrl-g
+enter newt
+type #
+enter wizintrinsic
+pick blinded
+pick monster detection
+key return
+check map.with.detected contains newt

@@ -11,6 +11,7 @@ The only build path is `win/cocoa/Makefile` (there is no Xcode project):
 ```sh
 make -C win/cocoa          # -> win/cocoa/build/NetHack.app
 make -C win/cocoa test     # XCTest unit tests in win/cocoa/Tests/ (also run by CI)
+make -C win/cocoa uitest   # scripted tests that play a real game (win/cocoa/UITests/; also run by CI)
 open win/cocoa/build/NetHack.app
 ```
 
@@ -18,7 +19,7 @@ To skip the role picker: `NETHACKOPTIONS="role:Valkyrie,race:human,gender:female
 
 Full Xcode must be installed at `/Applications/Xcode.app`, because `ibtool` (XIB compilation) isn't in the Command Line Tools; the Makefile sets `DEVELOPER_DIR` itself when `xcode-select` points at the Command Line Tools. A fresh Xcode also needs `sudo xcodebuild -license accept` and `xcodebuild -runFirstLaunch`. The app is ad-hoc signed; no signing identity is needed.
 
-The tests link only the code under test plus a stub `NhEventQueue`, not the core, so logic worth testing goes in plain classes, with window controllers kept thin. There is no linter. `.clang-format` and `DEVEL/code_style.txt` describe upstream's C style; the Cocoa Objective-C files use their own older style (tabs). Match the file you're editing.
+The unit tests link only the code under test plus a stub `NhEventQueue`, not the core, so logic worth testing goes in plain classes, with window controllers kept thin. Behaviour that needs the running game (status, map marks, dialogs, clicks) is covered by the UI tests: they run `NetHackUITest.app`, a copy of the app with its own bundle ID and `UITests/TestDriver.m` linked in, take the keyboard focus while they run, and are described in `win/cocoa/UITests/README.md`. There is no linter. `.clang-format` and `DEVEL/code_style.txt` describe upstream's C style; the Cocoa Objective-C files use their own older style (tabs). Match the file you're editing.
 
 Gotchas:
 - The Makefile's `core` step runs upstream's `setup.sh` and `fetch-lua` once, then builds only the core targets the app needs, not `make all`.

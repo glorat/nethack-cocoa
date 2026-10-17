@@ -1,0 +1,96 @@
+# Prompts open the right window, take the terminal's keys, and hold the game until they close.
+@options role:Priest,race:human,gender:female,align:neutral,pettype:none
+
+# Keys typed while a text window or a read-only menu is open go to it, not to the game,
+# and the game stays inside the command that opened it until it is closed
+type \
+check dialog.kind == Message
+type s
+check status.turn == 1
+key escape
+check dialog == none
+key ctrl-x
+check dialog.kind == Menu
+check game.input == other
+type s
+check status.turn == 1
+key escape
+check dialog == none
+check game.input == command
+
+# Space closes a text window without reaching the game (where it is an unknown command)
+type #
+enter version
+check dialog.kind == Message
+key space
+check dialog == none
+check messages.new !contains Unknown command
+check status.turn == 1
+
+# The # list holds only commands the player can use, and Return completes a partly typed one
+type #
+check dialog.kind == ExtCommand
+check dialog contains pray to the gods for help
+check dialog !contains show wall modes
+key escape
+type #
+enter pra
+check dialog.kind == YesNo
+check dialog contains Are you sure you want to pray?
+type n
+check dialog == none
+check messages.new !contains You begin praying
+check status.turn == 1
+
+# Game commands in the menu bar are greyed out while the game asks for a map position
+# (farlook shows a one-time tip first)
+type ;
+check dialog contains Farlooking
+key escape
+check dialog == none
+check menubar.Move/Search == disabled
+key escape
+check menubar.Move/Search == enabled
+
+# A menu bar item runs the command it names
+choose Move/Sit
+check messages.new contains You sit
+check status.turn == 2
+
+# A direction prompt takes a direction key
+key ctrl-d
+check dialog.kind == Direction
+toward floor of a room
+check dialog == none
+check status.turn == 3
+
+# An item prompt lists suitable items, but any inventory letter can still be typed
+type q
+check dialog.kind == Menu
+check menu.letters == d*
+type e
+check messages.new contains That is a silly thing to drink.
+
+# A typed answer is asked in a sheet that shows the whole question
+type #
+enter annotate
+check dialog.kind == Input
+check dialog contains What do you want to call this dungeon level?
+enter a note
+check dialog == none
+check messages.new contains What do you want to call this dungeon level? a note
+
+# A read-only list opened in the middle of a move holds the game until it is closed:
+# stepping onto a pile lists what is there, and the move only ends once the list is gone
+type d
+pick garlic
+type d
+pick wolfsbane
+toward floor of a room
+check status.turn == 6
+toward sprig of wolfsbane
+check dialog contains Things that are here
+check status.turn == 6
+key escape
+check dialog == none
+check status.turn == 7

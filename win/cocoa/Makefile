@@ -5,6 +5,7 @@
 #   make -C win/cocoa          # -> win/cocoa/build/NetHack.app
 #   make -C win/cocoa run
 #   make -C win/cocoa test     # XCTest unit tests for the window port
+#   make -C win/cocoa uitest   # scripted tests against a running game (UITests/)
 #   make -C win/cocoa ARCHFLAGS="-arch arm64 -arch x86_64" VERSION=5.0.1   # release
 
 TOP      := ../..
@@ -84,7 +85,7 @@ DATA := $(TOP)/dat/nhdat $(TOP)/dat/license $(TOP)/dat/symbols sysconf \
 	Credits.rtf $(wildcard Resources/images/*.png) $(BUILD)/tiles16.bmp \
 	Resources/tiles/tiles64.png Resources/tiles/tiles128.png
 
-.PHONY: all app core run test clean
+.PHONY: all app core run test uitest uitest-app clean
 
 all: app
 
@@ -190,6 +191,30 @@ $(TEST_BINARY): $(TEST_SRC) $(wildcard Tests/*.h) YesNoInput.h YesNoWindowContro
 	$(CC) -arch $(shell uname -m) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -fobjc-arc \
 		-bundle -I. -IiHack -ITests '-DCOCOA_SOURCE_DIR="$(CURDIR)"' -F$(XCTEST_FW) -framework XCTest -framework Cocoa -framework Carbon \
 		-Wl,-rpath,$(XCTEST_FW) $(TEST_SRC) -o $@
+
+# A copy of the app with the test driver linked in, its own bundle ID (so it
+# keeps its own preferences and container) and wizard mode for the test player
+UITEST_APP := $(BUILD)/NetHackUITest.app
+UITEST_CONTENTS := $(UITEST_APP)/Contents
+
+$(OBJDIR)/uitest/TestDriver.o: UITests/TestDriver.m MainWindowController.h MainView.h NetHackCocoaAppDelegate.h \
+	NhTextStyle.h iHack/NhEventQueue.h iHack/NhWindow.h iHack/NhMapWindow.h iHack/NhStatus.h iHack/NhItem.h \
+	iHack/TileSet.h | $(OBJDIR) core
+	@mkdir -p $(@D)
+	$(CC) $(OBJCFLAGS) -c $< -o $@
+
+$(UITEST_CONTENTS)/MacOS/NetHack: $(OBJS) $(LUALIB) $(OBJDIR)/uitest/TestDriver.o
+	@mkdir -p $(@D)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+uitest-app: app $(UITEST_CONTENTS)/MacOS/NetHack
+	rsync -a --exclude MacOS --exclude _CodeSignature $(CONTENTS)/ $(UITEST_CONTENTS)/
+	plutil -replace CFBundleIdentifier -string io.github.glorat.nethack.uitest $(UITEST_CONTENTS)/Info.plist
+	sed 's/^WIZARDS=.*/WIZARDS=uitest/' sysconf > $(UITEST_CONTENTS)/Resources/sysconf
+	codesign --force --sign - --entitlements NetHack.entitlements $(UITEST_APP)
+
+uitest: uitest-app
+	UITests/run.sh $(UITESTS)
 
 $(OBJDIR) $(BUILD):
 	mkdir -p $@
