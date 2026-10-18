@@ -12,6 +12,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - The map marks item piles and monsters you sense but can't see.
 - Hunger, encumbrance and status conditions show as colored badges, with deadly ones in red.
 - An arrow next to a stat, AC or level shows for a few turns when it goes up or down.
+- When a game ends, a dialog offers to start a new game or quit.
 
 ### Changed
 
