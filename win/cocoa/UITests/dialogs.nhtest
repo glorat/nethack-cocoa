@@ -94,3 +94,9 @@ check status.turn == 6
 key escape
 check dialog == none
 check status.turn == 7
+
+# Column headings, like the spell menu's, start where the columns below them do
+type Z
+check menu.headings contains Retention
+check menu.misaligned == ""
+key escape
