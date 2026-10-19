@@ -17,6 +17,9 @@ on:
       zip:
         value: ${{ jobs.build.outputs.zip }}
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-15
