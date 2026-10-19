@@ -16,6 +16,7 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 ### Changed
 
 - Blue, green and brown are easier to tell apart on the ASCII map.
+- Menu headings are larger, and column headings like the spell menu's line up with their columns.
 
 ## 5.0.0-5 (2026-10-17)
 

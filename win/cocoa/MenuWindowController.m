@@ -246,6 +246,9 @@ static NSString * SortKey( NSString * title )
 			// in tty, text indented by four spaces lines up with the items after "a - "
 			if ( hasItems && spaces >= 4 && itemStart > 0 ) {
 				row.start = itemStart + (spaces - 4) * spaceWidth;
+			} else if ( hasItems && spaces == 0 && row.fields.count > 1 ) {
+				// a column header from menu_tab_sep has no "a - " indent, but heads the items' columns
+				row.start = itemStart;
 			} else {
 				row.start = spaces * spaceWidth * 2;
 			}
@@ -657,7 +660,9 @@ static NSString * SortKey( NSString * title )
 	label.lineBreakMode = NSLineBreakByClipping;
 	[label setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
 	[cell addSubview:label];
-	cell.textField = label;
+	// a group row restyles its cell's textField, dropping the tab stops that line up columns
+	if ( ![self tableView:tv isGroupRow:r] )
+		cell.textField = label;
 	// a text field's own width leaves out the paragraph indent
 	NSLayoutConstraint * width = [label.widthAnchor constraintEqualToConstant:contentWidth + 4];
 	width.priority = NSLayoutPriorityDefaultHigh;

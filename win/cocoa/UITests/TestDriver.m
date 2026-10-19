@@ -178,6 +178,36 @@ static void CollectText(NSView * view, NSMutableArray * out)
 		CollectText(sub, out);
 }
 
+// where each tab-separated field of a menu row starts, in the table's coordinates
+static NSArray<NSNumber *> * FieldStarts(NSTableView * table, NSInteger r)
+{
+	NSView * cell = [table viewAtColumn:0 row:r makeIfNecessary:YES];
+	[cell layoutSubtreeIfNeeded];
+	NSTextField * label = nil;
+	for ( NSView * sub in cell.subviews ) {
+		if ( [sub isKindOfClass:NSTextField.class] )
+			label = (NSTextField *) sub;
+	}
+	if ( !label )
+		return @[];
+	NSTextStorage * storage = [[NSTextStorage alloc] initWithAttributedString:label.attributedStringValue];
+	NSLayoutManager * layout = [[NSLayoutManager alloc] init];
+	NSTextContainer * container = [[NSTextContainer alloc] initWithSize:NSMakeSize(1e6, 1e6)];
+	[layout addTextContainer:container];
+	[storage addLayoutManager:layout];
+	CGFloat origin = [cell convertPoint:label.frame.origin toView:table].x;
+	NSString * text = storage.string;
+	NSMutableArray * starts = [NSMutableArray array];
+	for ( NSUInteger i = 0; i < text.length; ++i ) {
+		if ( [text characterAtIndex:i] == '\t' || (i > 0 && [text characterAtIndex:i-1] != '\t') )
+			continue;
+		NSUInteger glyph = [layout glyphIndexForCharacterAtIndex:i];
+		NSRect box = [layout boundingRectForGlyphRange:NSMakeRange(glyph, 1) inTextContainer:container];
+		[starts addObject:@(origin + box.origin.x)];
+	}
+	return starts;
+}
+
 static void SaveWindowImage(NSWindow * window, NSString * path);
 
 #pragma mark Driver
@@ -704,6 +734,29 @@ static NSArray<NSString *> * WearingSlots(void)
 		NSString * field = [key substringFromIndex:5];
 		if ( [field isEqualToString:@"question"] )
 			return ((BOOL (*)(id, SEL))objc_msgSend)(menu, NSSelectorFromString(@"isQuestion")) ? @"yes" : @"no";
+		if ( [field isEqualToString:@"misaligned"] ) {
+			NSTableView * table = [self ivar:@"tableView" of:menu];
+			NSMutableArray * itemStarts = [NSMutableArray array];
+			for ( NSUInteger r = 0; r < rows.count; ++r ) {
+				if ( [rows[r] valueForKey:@"item"] )
+					[itemStarts addObjectsFromArray:FieldStarts(table, r)];
+			}
+			NSMutableArray * misaligned = [NSMutableArray array];
+			for ( NSUInteger r = 0; r < rows.count; ++r ) {
+				NSArray * fields = [rows[r] valueForKey:@"fields"];
+				if ( [rows[r] valueForKey:@"item"] || fields.count < 2 )
+					continue;
+				NSArray<NSNumber *> * starts = FieldStarts(table, r);
+				for ( NSUInteger f = 0; f < starts.count && f < fields.count; ++f ) {
+					BOOL matched = NO;
+					for ( NSNumber * x in itemStarts )
+						matched |= fabs(x.doubleValue - starts[f].doubleValue) < 1;
+					if ( !matched )
+						[misaligned addObject:fields[f]];
+				}
+			}
+			return [misaligned componentsJoinedByString:@" "];
+		}
 		if ( [field hasPrefix:@"@"] ) {
 			BOOL style = [field hasSuffix:@".style"];
 			NSString * wanted = [field substringWithRange:NSMakeRange(1, field.length - 1 - (style ? 6 : 0))];

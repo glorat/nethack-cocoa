@@ -83,6 +83,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `dialog` / `dialog.kind` | All text in the open dialog / `Menu YesNo Direction Input ExtCommand Message` or `none` |
 | `menu.letters`, `menu.<letter>`, `menu.@<text>`, `.style` | Rows of the open menu; style is a colour name (`default green red ...`) plus `bold`, `underline`, `background` |
 | `menu.headings`, `menu.headings.style`, `menu.question` | Headings, their styles, and whether the menu is shown as answer buttons |
+| `menu.misaligned` | Fields of column headings that don't start where an item's field does; `""` when they all line up |
 | `sidebar.letters`, `sidebar.<letter>`, `sidebar.@<text>`, `.style`, `sidebar.headings[.style]` | The inventory sidebar, the same way |
 | `wearing.<slot>` | The slot's tooltip, or the slot's name when empty |
 | `map.<dx>,<dy>`, `.marks`, `.bg` | What a square shows, its marks (`pet pile peaceful ridden detected`), the floor under it |
