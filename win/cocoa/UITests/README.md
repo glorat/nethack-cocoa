@@ -64,6 +64,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `toward <name>` | Type the direction key toward the adjacent square showing `name` (skipping squares hiding a monster or trap) |
 | `step <name>` | Move the hero onto that square; fails if the hero didn't move |
 | `click sidebar <letter>` | Click an inventory sidebar row |
+| `drag sidebar-edge <dx>` | Drag the inventory sidebar's left edge `dx` points right (negative is left) |
 | `click wearing <slot>` | Click a Wearing panel slot (`weapon`, `shield`, `cloak`, ...) |
 | `click map <dx> <dy>` | Click the map square at that offset from the hero |
 | `click map-near <name>` | Click an adjacent square showing `name` |
@@ -91,4 +92,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `messages`, `messages.new` | The message log; only what the last step added |
 | `menubar.<Menu>/<Item>` | `enabled` or `disabled` |
 | `tileset.size` | e.g. `128x128` |
+| `window.squeezed` | `yes` if the window could be made narrower than its contents need |
+| `sidebar.width` | The inventory sidebar's width in points |
+| `text.size` | Point size of the message log's text, e.g. `13` |
 | `game.input` | What the game is waiting for: `command`, `position` (a map spot) or `other` (still inside a command) |

@@ -10,6 +10,9 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 - The Tile Set menu lists every tile set in the folder that holds `.nethackrc`, and Show Tile Sets Folder opens it.
 - The `tile_file` option chooses the tile set at launch.
 - Game → Edit Options File... opens `.nethackrc` in your text editor.
+- View → Bigger Text and Smaller Text change the size of messages, stats, the inventory and menus.
+- The `font_size_message` option sets the starting text size.
+- Drag the inventory sidebar's left edge to make it wider or narrower.
 
 ### Changed
 

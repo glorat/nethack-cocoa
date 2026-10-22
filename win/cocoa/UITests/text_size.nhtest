@@ -1,0 +1,19 @@
+# font_size_message in .nethackrc sets the starting text size, and the View menu changes it.
+# The menu's choice is kept for the next launch; Default Text Size hands it back to the option.
+@options role:Valkyrie,race:human,gender:female,align:neutral
+@config OPTIONS=font_size_message:18
+
+check text.size == 18
+choose View/Bigger Text
+check text.size == 20
+type S
+expect-exit
+@relaunch
+check text.size == 20
+choose View/Default Text Size
+check text.size == 13
+check menubar.View/Default Text Size == disabled
+type S
+expect-exit
+@relaunch
+check text.size == 18

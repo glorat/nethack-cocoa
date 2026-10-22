@@ -49,6 +49,7 @@
 #import "TileSet.h"
 #import "TileSheet.h"
 #import "OptionsFile.h"
+#import "TextSize.h"
 #import "NetHackCocoaAppDelegate.h"
 #import "EquipmentView.h"
 #import "InventoryView.h"
@@ -62,6 +63,8 @@ static MainWindowController* instance;
 
 static const CGFloat kInventoryWidth = 280;
 static const CGFloat kMinWindowWidth = 637;
+static const CGFloat kMinMessagesWidth = 153;
+static const CGFloat kMinInventoryWidth = 180;
 static NSString * const kDefaultTileSet = @"tiles128.png";
 
 @implementation MainWindowController
@@ -143,6 +146,8 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 	
 	[[self window] setAcceptsMouseMovedEvents:YES];
 	[self installInventorySidebar];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applyTextSize)
+		name:NhTextSizeDidChangeNotification object:nil];
 }
 
 - (void)installInventorySidebar
@@ -156,7 +161,13 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 	inventoryView.chooseItem = ^(char letter) {
 		[weakSelf chooseInventoryItem:letter];
 	};
+	inventoryView.resize = ^(CGFloat width, BOOL done) {
+		[weakSelf dragInventoryWidth:width done:done];
+	};
 	[content addSubview:inventoryView];
+	// bigger text widens the stats, which would otherwise squeeze the messages to nothing
+	messagesMinWidth = [messages.widthAnchor constraintGreaterThanOrEqualToConstant:kMinMessagesWidth];
+	messagesMinWidth.active = YES;
 
 	NSMutableArray * edges = [NSMutableArray array];
 	for ( NSLayoutConstraint * c in content.constraints ) {
@@ -171,15 +182,16 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 		[inventoryView.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
 		[inventoryView.topAnchor constraintEqualToAnchor:content.topAnchor],
 		[inventoryView.bottomAnchor constraintEqualToAnchor:content.bottomAnchor],
-		[inventoryView.widthAnchor constraintEqualToConstant:kInventoryWidth],
 	];
-	[[NSUserDefaults standardUserDefaults] registerDefaults:@{ @"ShowInventory" : @YES }];
+	inventoryWidth = [inventoryView.widthAnchor constraintEqualToConstant:kInventoryWidth];
+	inventoryShownConstraints = [inventoryShownConstraints arrayByAddingObject:inventoryWidth];
+	[[NSUserDefaults standardUserDefaults] registerDefaults:@{ @"ShowInventory" : @YES, @"InventoryWidth" : @(kInventoryWidth) }];
+	inventoryWidth.constant = [self savedInventoryWidth];
 	[self showInventory:[[NSUserDefaults standardUserDefaults] boolForKey:@"ShowInventory"]];
 }
 
 - (void)showInventory:(BOOL)show
 {
-	NSWindow * window = self.window;
 	inventoryView.hidden = !show;
 	if ( show ) {
 		[NSLayoutConstraint deactivateConstraints:inventoryHiddenConstraints];
@@ -188,8 +200,50 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 		[NSLayoutConstraint deactivateConstraints:inventoryShownConstraints];
 		[NSLayoutConstraint activateConstraints:inventoryHiddenConstraints];
 	}
+	[self updateMinWindowWidth];
+}
+
+// the map, stats, equipment and messages can't get narrower than this
+-(CGFloat)mainAreaMinWidth
+{
+	CGFloat top = statsView.fittingSize.width + equipmentView.frame.size.width + messagesMinWidth.constant;
+	return MAX(kMinWindowWidth, top);
+}
+
+// saved as the width at the default text size, so the sidebar keeps its proportion when the text grows
+-(CGFloat)savedInventoryWidth
+{
+	CGFloat saved = [[NSUserDefaults standardUserDefaults] doubleForKey:@"InventoryWidth"];
+	return NhScaledFontSize(MAX(saved, kMinInventoryWidth));
+}
+
+-(void)dragInventoryWidth:(CGFloat)width done:(BOOL)done
+{
+	NSWindow * window = self.window;
+	width = round(MAX(width, NhScaledFontSize(kMinInventoryWidth)));
+	CGFloat room = [window contentRectForFrameRect:window.frame].size.width - [self mainAreaMinWidth];
+	if ( width > room ) {
+		// widen the window leftward so the edge stays under the mouse, then rightward, within the screen
+		NSRect frame = window.frame, screen = window.screen.visibleFrame;
+		CGFloat left = MAX(0, MIN(width - room, NSMinX(frame) - NSMinX(screen)));
+		CGFloat right = MAX(0, MIN(width - room - left, NSMaxX(screen) - NSMaxX(frame)));
+		frame.origin.x -= left;
+		frame.size.width += left + right;
+		[window setFrame:frame display:YES];
+		width = room + left + right;
+	}
+	inventoryWidth.constant = width;
+	if ( done ) {
+		[[NSUserDefaults standardUserDefaults] setDouble:inventoryWidth.constant * NhDefaultTextSize / NhTextSize() forKey:@"InventoryWidth"];
+		[self updateMinWindowWidth];
+	}
+}
+
+-(void)updateMinWindowWidth
+{
+	NSWindow * window = self.window;
 	NSSize minSize = window.contentMinSize;
-	minSize.width = kMinWindowWidth + (show ? kInventoryWidth : 0);
+	minSize.width = [self mainAreaMinWidth] + (inventoryView.hidden ? 0 : inventoryWidth.constant);
 	window.contentMinSize = minSize;
 	NSRect content = [window contentRectForFrameRect:window.frame];
 	if ( content.size.width < minSize.width ) {
@@ -274,6 +328,14 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 		
 		// set table row spacing to zero in messages window
 		[messagesView setIntercellSpacing:NSMakeSize(0,0)];
+
+		// font_size_message and font_size_status only choose where the text starts; once the player
+		// picks a size in the View menu, that wins
+		CGFloat textSize = [[NSUserDefaults standardUserDefaults] doubleForKey:@"TextSize"];
+		if ( textSize <= 0 )
+			textSize = iflags.wc_fontsiz_message > 0 ? iflags.wc_fontsiz_message : iflags.wc_fontsiz_status;
+		NhSetTextSize(textSize > 0 ? textSize : NhDefaultTextSize);
+		[self applyTextSize];
 		
 		// use system colors for dark mode compatibility
 		[messagesView setBackgroundColor:NSColor.textBackgroundColor];
@@ -394,6 +456,12 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 		return program_state.input_state == commandInp;
 	if ( item.action == @selector(toggleInventory:) )
 		item.title = inventoryView.hidden ? @"Show Inventory" : @"Hide Inventory";
+	if ( item.action == @selector(biggerText:) )
+		return NhBiggerTextSize(NhTextSize()) != NhTextSize();
+	if ( item.action == @selector(smallerText:) )
+		return NhSmallerTextSize(NhTextSize()) != NhTextSize();
+	if ( item.action == @selector(defaultTextSize:) )
+		return NhTextSize() != NhDefaultTextSize;
 	return YES;
 }
 
@@ -428,6 +496,46 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 - (IBAction)actualSize:(id)sender
 {
 	[mainView setZoom:1.0];
+}
+
+-(NSFont *)messageFont
+{
+	return [NSFont systemFontOfSize:NhTextSize()];
+}
+
+-(void)applyTextSize
+{
+	messagesView.rowHeight = NhLineHeight([self messageFont]);
+	messagesMinWidth.constant = NhScaledFontSize(kMinMessagesWidth);
+	inventoryWidth.constant = [self savedInventoryWidth];
+	// after the stats have taken the new size too, since they hear of it from the same notification
+	dispatch_async(dispatch_get_main_queue(), ^{
+		[self updateMinWindowWidth];
+	});
+	[self refreshMessages];
+}
+
+-(void)chooseTextSize:(CGFloat)size
+{
+	NhSetTextSize(size);
+	[[NSUserDefaults standardUserDefaults] setDouble:NhTextSize() forKey:@"TextSize"];
+}
+
+- (IBAction)biggerText:(id)sender
+{
+	[self chooseTextSize:NhBiggerTextSize(NhTextSize())];
+}
+
+- (IBAction)smallerText:(id)sender
+{
+	[self chooseTextSize:NhSmallerTextSize(NhTextSize())];
+}
+
+// forgets the choice, so font_size_message decides again at the next launch
+- (IBAction)defaultTextSize:(id)sender
+{
+	NhSetTextSize(NhDefaultTextSize);
+	[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"TextSize"];
 }
 
 - (IBAction)changeFont:(id)sender
@@ -665,6 +773,10 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 			[asciiModeMenuItem setState:iflags.wc_ascii_map ? NSControlStateValueOn : NSControlStateValueOff];
 			[mainView enableAsciiMode:iflags.wc_ascii_map];
 		}
+		if ( [pref isEqualToString:@"font_size_message"] && iflags.wc_fontsiz_message > 0 )
+			NhSetTextSize(iflags.wc_fontsiz_message);
+		if ( [pref isEqualToString:@"font_size_status"] && iflags.wc_fontsiz_status > 0 )
+			NhSetTextSize(iflags.wc_fontsiz_status);
 	}		
 }
 
@@ -694,9 +806,23 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 - (id)tableView:(NSTableView *)aTableView objectValueForTableColumn:(NSTableColumn *)aTableColumn row:(NSInteger)rowIndex
 {
 	if ( aTableView == messagesView ) {
-		return [[NhWindow messageWindow] messageAtRow:rowIndex];
+		return [self inTextSize:[[NhWindow messageWindow] messageAtRow:rowIndex]];
 	}
 	return nil;
+}
+
+// messages carry fonts only where they're bold, made for the default size
+-(NSAttributedString *)inTextSize:(id)message
+{
+	if ( message == nil )
+		return nil;
+	NSMutableAttributedString * s = [message isKindOfClass:[NSAttributedString class]]
+		? [message mutableCopy] : [[NSMutableAttributedString alloc] initWithString:message];
+	NSFont * plain = [self messageFont];
+	[s enumerateAttribute:NSFontAttributeName inRange:NSMakeRange(0, s.length) options:0 usingBlock:^(NSFont * font, NSRange range, BOOL * stop) {
+		[s addAttribute:NSFontAttributeName value:font ? NhScaledFont(font) : plain range:range];
+	}];
+	return s;
 }
 
 - (void)refreshMessages {

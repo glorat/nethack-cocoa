@@ -24,6 +24,7 @@
 
 #import "StatsView.h"
 #import "NhStatus.h"
+#import "TextSize.h"
 
 #import "hack.h"
 
@@ -47,7 +48,7 @@ static const CGFloat kBadgePadding = 6.0;
 		NSColor * text = b.severity == NhSeverityInfo ? [NSColor labelColor]
 			: b.severity == NhSeverityCaution ? [NSColor blackColor]
 			: [NSColor whiteColor];
-		attributes = @{ NSFontAttributeName : [NSFont systemFontOfSize:11 weight:NSFontWeightSemibold],
+		attributes = @{ NSFontAttributeName : [NSFont systemFontOfSize:NhScaledFontSize(11) weight:NSFontWeightSemibold],
 						NSForegroundColorAttributeName : text };
 		self.translatesAutoresizingMaskIntoConstraints = NO;
 		self.toolTip = b.text;
@@ -80,7 +81,9 @@ static const CGFloat kBadgePadding = 6.0;
 @implementation StatsView
 {
 	NSStackView	*	badges;
+	NSArray<NhStatusBadge *> *	shownBadges;
 	NSMutableDictionary<NSNumber *, NSTextField *> *	changeMarks;
+	NSMapTable<NSTextField *, NSFont *> *	defaultFonts;
 }
 
 
@@ -133,6 +136,39 @@ static const CGFloat kBadgePadding = 6.0;
 	state.hidden = YES;
 
 	changeMarks = [NSMutableDictionary dictionary];
+
+	defaultFonts = [NSMapTable weakToStrongObjectsMapTable];
+	[self rememberFontsIn:self];
+	[self applyTextSize];
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applyTextSize)
+		name:NhTextSizeDidChangeNotification object:nil];
+}
+
+-(void)rememberFontsIn:(NSView *)view
+{
+	for ( NSView * subview in view.subviews ) {
+		if ( [subview isKindOfClass:[NSTextField class]] )
+			[defaultFonts setObject:((NSTextField *)subview).font forKey:(NSTextField *)subview];
+		[self rememberFontsIn:subview];
+	}
+}
+
+-(void)applyTextSize
+{
+	for ( NSTextField * field in defaultFonts )
+		field.font = NhScaledFont([defaultFonts objectForKey:field]);
+	for ( NSTextField * mark in changeMarks.allValues )
+		mark.font = [NSFont boldSystemFontOfSize:NhScaledFontSize([NSFont smallSystemFontSize])];
+	[self showBadges:shownBadges];
+}
+
+-(void)showBadges:(NSArray<NhStatusBadge *> *)list
+{
+	shownBadges = list;
+	for ( NSView * view in badges.arrangedSubviews )
+		[view removeFromSuperview];
+	for ( NhStatusBadge * badge in list )
+		[badges addArrangedSubview:[[StatusBadgeView alloc] initWithBadge:badge]];
 }
 
 // drawn in the gap after the value so the grid columns don't shift
@@ -141,7 +177,7 @@ static const CGFloat kBadgePadding = 6.0;
 	NSTextField * mark = changeMarks[@(field)];
 	if ( !mark && change ) {
 		mark = [NSTextField labelWithString:@""];
-		mark.font = [NSFont boldSystemFontOfSize:[NSFont smallSystemFontSize]];
+		mark.font = [NSFont boldSystemFontOfSize:NhScaledFontSize([NSFont smallSystemFontSize])];
 		mark.translatesAutoresizingMaskIntoConstraints = NO;
 		[self addSubview:mark];
 		[NSLayoutConstraint activateConstraints:@[
@@ -207,10 +243,7 @@ static void SetMeter(NSLevelIndicator * meter, int current, int maximum)
 		[self showChange:change improved:improved forField:field.intValue after:values[field]];
 	}
 
-	for ( NSView * view in badges.arrangedSubviews )
-		[view removeFromSuperview];
-	for ( NhStatusBadge * badge in status.badges )
-		[badges addArrangedSubview:[[StatusBadgeView alloc] initWithBadge:badge]];
+	[self showBadges:status.badges];
 }
 
 @end

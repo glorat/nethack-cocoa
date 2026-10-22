@@ -1,0 +1,15 @@
+# Dragging the inventory sidebar's left edge resizes it, widening the window when it has to,
+# and the width is kept for the next launch.
+@options role:Valkyrie,race:human,gender:female,align:neutral
+
+check sidebar.width == 280
+drag sidebar-edge -100
+check sidebar.width == 380
+drag sidebar-edge 1000
+check sidebar.width == 180
+drag sidebar-edge -60
+check sidebar.width == 240
+type S
+expect-exit
+@relaunch
+check sidebar.width == 240

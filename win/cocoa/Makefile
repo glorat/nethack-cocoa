@@ -180,14 +180,14 @@ run: app
 TEST_BUNDLE := $(BUILD)/CocoaTests.xctest
 TEST_BINARY := $(TEST_BUNDLE)/Contents/MacOS/CocoaTests
 TEST_SRC := $(wildcard Tests/*.m) YesNoInput.m YesNoWindowController.m iHack/NhYnQuestion.m \
-	DirectionWindowController.m KeyEvent.m ExtCommandInput.m ExtCommandWindowController.m InputWindowController.m PlayerName.m iHack/NhStatus.m TileSheet.m OptionsFile.m
+	DirectionWindowController.m KeyEvent.m ExtCommandInput.m ExtCommandWindowController.m InputWindowController.m PlayerName.m iHack/NhStatus.m TileSheet.m OptionsFile.m TextSize.m
 XCTEST_FW = $(shell $(if $(DEVELOPER_DIR),DEVELOPER_DIR=$(DEVELOPER_DIR)) xcrun --show-sdk-platform-path)/Developer/Library/Frameworks
 
 test: $(TEST_BINARY)
 	xcrun xctest $(TEST_BUNDLE)
 
 $(TEST_BINARY): $(TEST_SRC) $(wildcard Tests/*.h) YesNoInput.h YesNoWindowController.h \
-	iHack/NhYnQuestion.h DirectionWindowController.h KeyEvent.h ExtCommandInput.h ExtCommandWindowController.h InputWindowController.h PlayerName.h iHack/NhStatus.h TileSheet.h OptionsFile.h Tests/Info.plist | $(BUILD)
+	iHack/NhYnQuestion.h DirectionWindowController.h KeyEvent.h ExtCommandInput.h ExtCommandWindowController.h InputWindowController.h PlayerName.h iHack/NhStatus.h TileSheet.h OptionsFile.h TextSize.h Tests/Info.plist | $(BUILD)
 	@mkdir -p $(@D)
 	cp Tests/Info.plist $(TEST_BUNDLE)/Contents/
 	$(CC) -arch $(shell uname -m) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -fobjc-arc \

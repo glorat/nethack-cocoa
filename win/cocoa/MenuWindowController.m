@@ -31,6 +31,7 @@
 #import "TileSet.h"
 #import "NhTextStyle.h"
 #import "NhEventQueue.h"
+#import "TextSize.h"
 
 static const CGFloat kTileSize		= 24.0;
 static const CGFloat kTileGap		= 6.0;
@@ -229,7 +230,7 @@ static NSString * SortKey( NSString * title )
 		}
 	}
 
-	itemStart = (hasTiles ? kTileSize + kTileGap : 0) + (hasLetters ? kLetterWidth : 0);
+	itemStart = (hasTiles ? kTileSize + kTileGap : 0) + (hasLetters ? NhScaledFontSize(kLetterWidth) : 0);
 	CGFloat spaceWidth = [@" " sizeWithAttributes:@{ NSFontAttributeName : bodyFont }].width;
 
 	for ( NhItemGroup * group in menuParams.itemGroups ) {
@@ -373,8 +374,8 @@ static NSString * SortKey( NSString * title )
 		how = menu.how;
 		panel.delegate = self;
 		panel.title = menu.prompt ?: @"";
-		bodyFont = [NSFont systemFontOfSize:14];
-		headingFont = [NSFont systemFontOfSize:14 weight:NSFontWeightSemibold];
+		bodyFont = [NSFont systemFontOfSize:NhScaledFontSize(14)];
+		headingFont = [NSFont systemFontOfSize:NhScaledFontSize(14) weight:NSFontWeightSemibold];
 		[self buildRows];
 		[self computeTabStops];
 		[self buildContents];
@@ -438,6 +439,11 @@ static NSString * SortKey( NSString * title )
 	[title appendAttributedString:[[NSAttributedString alloc] initWithString:row.fields[0] attributes:NhTextAttributes(row.color, row.attr, bodyFont)]];
 	[title addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, title.length)];
 	button.attributedTitle = title;
+	// a push button's height is fixed, so bigger text needs one that grows with it
+	if ( NhTextSize() > NhDefaultTextSize ) {
+		button.bezelStyle = NSBezelStyleFlexiblePush;
+		[button.heightAnchor constraintEqualToConstant:NhLineHeight(bodyFont) + 12].active = YES;
+	}
 	if ( [checked containsObject:row.item] )
 		button.keyEquivalent = @"\r";
 	return button;
@@ -445,7 +451,7 @@ static NSString * SortKey( NSString * title )
 
 -(void)buildQuestionContents
 {
-	const CGFloat width = 380;
+	const CGFloat width = NhScaledFontSize(380);
 	const CGFloat inner = width - 2 * kMargin;
 	self.window.title = @"";
 	self.window.styleMask &= ~NSWindowStyleMaskResizable;
@@ -460,7 +466,7 @@ static NSString * SortKey( NSString * title )
 
 	if ( menuParams.prompt.length ) {
 		NSTextField * prompt = [NSTextField wrappingLabelWithString:menuParams.prompt];
-		prompt.font = [NSFont boldSystemFontOfSize:15];
+		prompt.font = [NSFont boldSystemFontOfSize:NhScaledFontSize(15)];
 		prompt.preferredMaxLayoutWidth = inner;
 		[stack addArrangedSubview:prompt];
 		[stack setCustomSpacing:14 afterView:prompt];
@@ -475,7 +481,7 @@ static NSString * SortKey( NSString * title )
 			if ( text.length == 0 )
 				continue;
 			NSTextField * label = [NSTextField wrappingLabelWithString:text];
-			label.font = [NSFont systemFontOfSize:12];
+			label.font = [NSFont systemFontOfSize:NhScaledFontSize(12)];
 			label.textColor = [NSColor secondaryLabelColor];
 			label.preferredMaxLayoutWidth = inner;
 			view = label;
@@ -544,7 +550,8 @@ static NSString * SortKey( NSString * title )
 		documentHeight = [textView.layoutManager usedRectForTextContainer:textView.textContainer].size.height + 24;
 		scrollView.documentView = textView;
 	} else {
-		CGFloat rowHeight = hasTiles ? kTileSize + 6 : 22;
+		CGFloat text = NhLineHeight(bodyFont);
+		CGFloat rowHeight = hasTiles ? MAX(kTileSize, text) + 6 : text + 5;
 		MenuTableView * menuTable = [[MenuTableView alloc] init];
 		menuTable.hoverSelects = how == PICK_ONE;
 		tableView = menuTable;

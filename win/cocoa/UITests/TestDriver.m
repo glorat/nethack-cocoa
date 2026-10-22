@@ -236,7 +236,9 @@ static CFAbsoluteTime s_loadTime, s_launchTime;
 		return;
 	s_loadTime = CFAbsoluteTimeGetCurrent();
 	PrepareGameDirectory(env);
-	[NSUserDefaults.standardUserDefaults removePersistentDomainForName:NSBundle.mainBundle.bundleIdentifier];
+	// a relaunch keeps the settings, as the app does from one launch to the next
+	if ( [env[@"NETHACK_TEST_FRESH"] isEqualToString:@"1"] )
+		[NSUserDefaults.standardUserDefaults removePersistentDomainForName:NSBundle.mainBundle.bundleIdentifier];
 	// no check looks at window animations, and they slow dialogs down (sheets still animate)
 	[NSUserDefaults.standardUserDefaults setBool:NO forKey:@"NSAutomaticWindowAnimationsEnabled"];
 	__block id observer = [NSNotificationCenter.defaultCenter addObserverForName:NSApplicationDidFinishLaunchingNotification object:nil queue:nil usingBlock:^(NSNotification * note) {
@@ -522,6 +524,29 @@ static unsigned short KeyCodeFor(unichar c)
 	}
 }
 
+// drags the sidebar's left edge dx points to the right, a few steps at a time as a hand would
+- (void)dragSidebarEdge:(CGFloat)dx
+{
+	OnMain(^id{
+		NSView * inventory = [self ivar:@"inventoryView" of:self.controller];
+		NSWindow * window = inventory.window;
+		NSPoint start = [inventory convertPoint:NSMakePoint(2, NSMidY(inventory.bounds)) toView:nil];
+		NSMutableArray * events = [NSMutableArray array];
+		[events addObject:@[ @(NSEventTypeLeftMouseDown), @0 ]];
+		for ( int i = 1; i <= 4; ++i )
+			[events addObject:@[ @(NSEventTypeLeftMouseDragged), @(dx * i / 4) ]];
+		[events addObject:@[ @(NSEventTypeLeftMouseUp), @(dx) ]];
+		for ( NSArray * step in events ) {
+			NSEventType type = [step[0] unsignedIntegerValue];
+			NSEvent * e = [NSEvent mouseEventWithType:type location:NSMakePoint(start.x + [step[1] doubleValue], start.y) modifierFlags:0
+											timestamp:NSProcessInfo.processInfo.systemUptime windowNumber:window.windowNumber
+											  context:nil eventNumber:0 clickCount:1 pressure:type == NSEventTypeLeftMouseUp ? 0 : 1];
+			[NSApp postEvent:e atStart:NO];
+		}
+		return nil;
+	});
+}
+
 #pragma mark Game state
 
 - (NSPoint)hero
@@ -798,6 +823,23 @@ static NSArray<NSString *> * WearingSlots(void)
 		return @"(no such row)";
 	}
 
+	if ( [key isEqualToString:@"window.squeezed"] ) {
+		// shrinks the window to its minimum and sees whether the layout still fits, then puts it back
+		NSWindow * window = controller.window;
+		NSRect frame = window.frame;
+		[window setContentSize:window.contentMinSize];
+		[window.contentView layoutSubtreeIfNeeded];
+		NSView * content = window.contentView;
+		CGFloat right = 0;
+		for ( NSView * view in content.subviews )
+			if ( !view.hidden )
+				right = MAX(right, NSMaxX(view.frame));
+		BOOL squeezed = right > NSWidth(content.bounds) + 0.5 || NSWidth(content.bounds) > window.contentMinSize.width + 0.5;
+		[window setFrame:frame display:YES];
+		return squeezed ? @"yes" : @"no";
+	}
+	if ( [key isEqualToString:@"sidebar.width"] )
+		return [NSString stringWithFormat:@"%g", [[self ivar:@"inventoryView" of:controller] frame].size.width];
 	if ( [key hasPrefix:@"sidebar."] ) {
 		id inventory = [self ivar:@"inventoryView" of:controller];
 		NSTableView * table = [self ivar:@"tableView" of:inventory];
@@ -850,6 +892,14 @@ static NSArray<NSString *> * WearingSlots(void)
 	if ( [key isEqualToString:@"tileset.size"] ) {
 		NSSize size = [TileSet instance].tileSize;
 		return [NSString stringWithFormat:@"%gx%g", size.width, size.height];
+	}
+	if ( [key isEqualToString:@"text.size"] ) {
+		NSTableView * log = [self.controller valueForKey:@"messagesView"];
+		if ( log.numberOfRows == 0 )
+			return @"";
+		NSAttributedString * row = [log.dataSource tableView:log objectValueForTableColumn:log.tableColumns[0] row:0];
+		NSFont * font = [row attribute:NSFontAttributeName atIndex:0 effectiveRange:NULL];
+		return [NSString stringWithFormat:@"%g", font.pointSize];
 	}
 	return nil;
 }
@@ -1147,6 +1197,8 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 				[self click:rest];
 			else if ( [command isEqualToString:@"choose"] )
 				[self chooseMenuItem:rest];
+			else if ( [command isEqualToString:@"drag"] && [rest hasPrefix:@"sidebar-edge "] )
+				[self dragSidebarEdge:[[rest substringFromIndex:13] doubleValue]];
 			else
 				[self bailOut:[@"unknown command " stringByAppendingString:command]];
 			[self afterAction];

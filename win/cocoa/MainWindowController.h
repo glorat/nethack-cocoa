@@ -61,6 +61,8 @@
 	InventoryView							*	inventoryView;
 	NSArray<NSLayoutConstraint *>			*	inventoryShownConstraints;
 	NSArray<NSLayoutConstraint *>			*	inventoryHiddenConstraints;
+	NSLayoutConstraint						*	messagesMinWidth;
+	NSLayoutConstraint						*	inventoryWidth;
 	
 	IBOutlet PlayerSelectionWindowController*	showPlayerSelection;
 	IBOutlet NotesWindowController			*	notesWindow;
@@ -83,6 +85,9 @@
 - (IBAction)zoomIn:(id)sender;
 - (IBAction)zoomOut:(id)sender;
 - (IBAction)actualSize:(id)sender;
+- (IBAction)biggerText:(id)sender;
+- (IBAction)smallerText:(id)sender;
+- (IBAction)defaultTextSize:(id)sender;
 
 - (void)initWindows;
 - (void)preferenceUpdate:(NSString *)pref;

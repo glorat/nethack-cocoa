@@ -1,0 +1,12 @@
+# At the largest text size the window can't be made narrower than the stats, messages and sidebar need.
+@options role:Valkyrie,race:human,gender:female,align:neutral
+
+check window.squeezed == no
+choose View/Bigger Text
+choose View/Bigger Text
+choose View/Bigger Text
+choose View/Bigger Text
+choose View/Bigger Text
+choose View/Bigger Text
+choose View/Bigger Text
+check window.squeezed == no

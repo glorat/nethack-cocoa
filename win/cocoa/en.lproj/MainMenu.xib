@@ -750,6 +750,25 @@
                                     <action selector="actualSize:" target="943" id="zm3-as-002"/>
                                 </connections>
                             </menuItem>
+                            <menuItem isSeparatorItem="YES" id="txt-sep-001"/>
+                            <menuItem title="Bigger Text" keyEquivalent="=" id="txt-big-001">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="biggerText:" target="943" id="txt-big-002"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Smaller Text" keyEquivalent="-" id="txt-sml-001">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="smallerText:" target="943" id="txt-sml-002"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Default Text Size" id="txt-def-001">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="defaultTextSize:" target="943" id="txt-def-002"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="inv-sep-001"/>
                             <menuItem title="Hide Inventory" keyEquivalent="s" id="inv-tog-001">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>

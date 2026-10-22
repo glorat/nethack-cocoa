@@ -26,6 +26,7 @@
 #import "MessageWindowController.h"
 #import "NhEventQueue.h"
 #import "wincocoa.h"
+#import "TextSize.h"
 
 
 #define RUN_MODAL	1
@@ -50,6 +51,7 @@
 	[mutable replaceOccurrencesOfString:@"\n  " withString:@"\n\t" options:0 range:NSMakeRange(0,[mutable length])];
 	[mutable replaceOccurrencesOfString:@"\n* " withString:@"\n\t*" options:0 range:NSMakeRange(0,[mutable length])];
 	
+	[textField setFont:NhScaledFont([textField font])];
 	[textField setEditable:YES];
 	[textField setStringValue:mutable];
 	[textField setEditable:NO];

@@ -8,14 +8,45 @@
 #import "NhItemGroup.h"
 #import "TileSet.h"
 #import "NhTextStyle.h"
+#import "TextSize.h"
 
 static const CGFloat kTileSize		= 24.0;
 static const CGFloat kMargin		= 10.0;
+
+@interface InventoryResizeHandle : NSView
+@property (nonatomic, weak) InventoryView * sidebar;
+@end
+
+@implementation InventoryResizeHandle
+
+- (void)resetCursorRects
+{
+	[self addCursorRect:self.bounds cursor:[NSCursor resizeLeftRightCursor]];
+}
+
+- (void)mouseDown:(NSEvent *)event
+{
+	InventoryView * sidebar = self.sidebar;
+	CGFloat startX = event.locationInWindow.x;
+	CGFloat startWidth = sidebar.frame.size.width;
+	for ( ;; ) {
+		event = [self.window nextEventMatchingMask:NSEventMaskLeftMouseDragged | NSEventMaskLeftMouseUp];
+		BOOL done = event.type == NSEventTypeLeftMouseUp;
+		if ( sidebar.resize )
+			sidebar.resize(startWidth + startX - event.locationInWindow.x, done);
+		if ( done )
+			break;
+	}
+}
+
+@end
+
 
 @implementation InventoryView
 {
 	NSTableView		*	tableView;
 	NSMutableArray	*	rows;	// NSAttributedString for a heading, NhItem for an item
+	NSArray<NhItemGroup *> *	groups;
 }
 
 - (instancetype)initWithFrame:(NSRect)frame
@@ -52,7 +83,16 @@ static const CGFloat kMargin		= 10.0;
 		divider.translatesAutoresizingMaskIntoConstraints = NO;
 		[self addSubview:divider];
 
+		InventoryResizeHandle * handle = [[InventoryResizeHandle alloc] init];
+		handle.sidebar = self;
+		handle.translatesAutoresizingMaskIntoConstraints = NO;
+		[self addSubview:handle];
+
 		[NSLayoutConstraint activateConstraints:@[
+			[handle.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
+			[handle.topAnchor constraintEqualToAnchor:self.topAnchor],
+			[handle.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
+			[handle.widthAnchor constraintEqualToConstant:5],
 			[divider.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
 			[divider.topAnchor constraintEqualToAnchor:self.topAnchor],
 			[divider.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
@@ -62,17 +102,30 @@ static const CGFloat kMargin		= 10.0;
 			[scrollView.topAnchor constraintEqualToAnchor:self.topAnchor],
 			[scrollView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor],
 		]];
+		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applyTextSize)
+			name:NhTextSizeDidChangeNotification object:nil];
 	}
 	return self;
 }
 
-- (void)setItemGroups:(NSArray<NhItemGroup *> *)groups
+-(void)applyTextSize
 {
+	[self setItemGroups:groups];
+}
+
+-(NSFont *)itemFont
+{
+	return [NSFont systemFontOfSize:NhScaledFontSize(13)];
+}
+
+- (void)setItemGroups:(NSArray<NhItemGroup *> *)itemGroups
+{
+	groups = itemGroups;
 	[rows removeAllObjects];
 	for ( NhItemGroup * group in groups ) {
 		if ( !group.dummy && group.title.length ) {
 			NSString * title = [group.title stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-			NSDictionary * attributes = NhTextAttributes(group.color, ATR_NONE, [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold]);
+			NSDictionary * attributes = NhTextAttributes(group.color, ATR_NONE, [NSFont systemFontOfSize:NhScaledFontSize(13) weight:NSFontWeightSemibold]);
 			[rows addObject:[[NSAttributedString alloc] initWithString:title attributes:attributes]];
 		}
 		[rows addObjectsFromArray:group.items];
@@ -110,7 +163,8 @@ static const CGFloat kMargin		= 10.0;
 
 - (CGFloat)tableView:(NSTableView *)tv heightOfRow:(NSInteger)r
 {
-	return [rows[r] isKindOfClass:[NhItem class]] ? kTileSize + 4 : 22;
+	CGFloat text = NhLineHeight([self itemFont]);
+	return [rows[r] isKindOfClass:[NhItem class]] ? MAX(kTileSize, text) + 4 : text + 6;
 }
 
 - (NSView *)tableView:(NSTableView *)tv viewForTableColumn:(NSTableColumn *)column row:(NSInteger)r
@@ -136,7 +190,7 @@ static const CGFloat kMargin		= 10.0;
 		tile.image = [[TileSet instance] imageForGlyph:item.glyph enabled:YES];
 
 	NSTextField * letter = [NSTextField labelWithString:item.inventoryLetter ? [NSString stringWithFormat:@"%c", item.inventoryLetter] : @""];
-	letter.font = [NSFont monospacedSystemFontOfSize:13 weight:NSFontWeightMedium];
+	letter.font = [NSFont monospacedSystemFontOfSize:NhScaledFontSize(13) weight:NSFontWeightMedium];
 	letter.textColor = [NSColor secondaryLabelColor];
 	letter.translatesAutoresizingMaskIntoConstraints = NO;
 
@@ -145,7 +199,7 @@ static const CGFloat kMargin		= 10.0;
 		text = [text stringByAppendingFormat:@" (%@)", item.detail];
 	NSMutableParagraphStyle * style = [[NSMutableParagraphStyle alloc] init];
 	style.lineBreakMode = NSLineBreakByTruncatingTail;
-	NSMutableDictionary * attributes = [NhTextAttributes(item.color, item.attr, [NSFont systemFontOfSize:13]) mutableCopy];
+	NSMutableDictionary * attributes = [NhTextAttributes(item.color, item.attr, [self itemFont]) mutableCopy];
 	attributes[NSParagraphStyleAttributeName] = style;
 	NSTextField * name = [NSTextField labelWithAttributedString:[[NSAttributedString alloc] initWithString:text attributes:attributes]];
 	name.lineBreakMode = NSLineBreakByTruncatingTail;
@@ -164,7 +218,7 @@ static const CGFloat kMargin		= 10.0;
 		[tile.heightAnchor constraintEqualToConstant:kTileSize],
 		[letter.leadingAnchor constraintEqualToAnchor:tile.trailingAnchor constant:6],
 		[letter.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor],
-		[name.leadingAnchor constraintEqualToAnchor:tile.trailingAnchor constant:24],
+		[name.leadingAnchor constraintEqualToAnchor:letter.leadingAnchor constant:NhScaledFontSize(18)],
 		[name.trailingAnchor constraintLessThanOrEqualToAnchor:cell.trailingAnchor constant:-kMargin],
 		[name.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor],
 	]];
