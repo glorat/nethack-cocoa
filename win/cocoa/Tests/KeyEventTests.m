@@ -65,4 +65,11 @@ static int Key(NSString * chars, NSEventModifierFlags flags, unsigned short keyC
 	XCTAssertEqual(Key(@"?", NSEventModifierFlagShift, kVK_ANSI_Slash), '?');
 }
 
+// a dead key, the first half of an accented letter, has no characters
+-(void)testKeyWithoutCharactersIsIgnored
+{
+	XCTAssertEqual(Key(@"", 0, kVK_ANSI_Grave), 0);
+	XCTAssertEqual(Key(@"", NSEventModifierFlagOption, kVK_ANSI_E), 0);
+}
+
 @end

@@ -1,0 +1,15 @@
+# An error in the window code costs the message it was showing, not the game.
+@options role:Valkyrie,race:human,gender:female,align:neutral,pettype:none
+@wizard
+
+# the echo of the answer fails, but the game still gets the answer
+throw-on-message monster? newt
+key ctrl-g
+enter newt
+check messages !contains monster? newt
+check map.count.newt == 1
+check game.input == command
+
+# the message window still works afterwards
+type :
+check messages.new contains here

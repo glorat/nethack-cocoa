@@ -1,0 +1,9 @@
+# A message that ends with "you" goes into the log instead of crashing the game.
+@options role:Valkyrie,race:human,gender:female,align:neutral
+@wizard
+
+# The answer is echoed after a prompt with no other "you" in it
+key ctrl-g
+enter you
+key escape
+check messages contains monster? you

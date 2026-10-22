@@ -163,7 +163,7 @@ static NhWindow *s_mapWindow = nil;
 		return NO;
 	
 	// treat 'your' just like 'you'
-	if ( [s characterAtIndex:r.location+r.length] == 'r' )
+	if ( r.location+r.length < [s length] && [s characterAtIndex:r.location+r.length] == 'r' )
 		++r.length;
 	
 	// make sure no trailing letters
@@ -176,7 +176,15 @@ static NhWindow *s_mapWindow = nil;
 - (void)print:(const char *)str attr:(int)attr
 {
 	[self lock];
+	@try {
+		[self addLine:str attr:attr];
+	} @finally {
+		[self unlock];
+	}
+}
 
+- (void)addLine:(const char *)str attr:(int)attr
+{
 	NSString *s = [NSString stringWithCString:str encoding:NSASCIIStringEncoding];
 	if ( [self useAttributedStrings] ) {
 
@@ -232,8 +240,6 @@ static NhWindow *s_mapWindow = nil;
 	}
 			
 	[lines addObject:s];
-
-	[self unlock];
 }
 
 - (NSArray *)messages {

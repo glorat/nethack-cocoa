@@ -49,6 +49,9 @@ for test in "$@"; do
 		dark) args+=(-AppleInterfaceStyle Dark) ;;
 	esac
 
+	# after a crash AppKit would ask whether to reopen the windows, and wait for an answer
+	args+=(-ApplePersistenceIgnoreState YES)
+
 	parts=$(mktemp -d)
 	awk -v dir="$parts" '/^@relaunch/ { n++; next } { print > (dir "/" n+0) }' "$test"
 
@@ -65,8 +68,12 @@ for test in "$@"; do
 			perl -e 'alarm shift; exec @ARGV' "$timeout" "$app" "${args[@]}" > "$log" 2> "$log.stderr"
 		code=$?
 		grep -E '^(ok|not ok|Bail out|#)' "$log" | sed 's/^/    /'
-		if [ $code -ne 0 ] || grep -q '^not ok' "$log"; then
+		# a launch that runs to the end of its script prints the plan; without it the app quit early
+		finished=1
+		grep -Eq '^[[:space:]]*(die|expect-exit)[[:space:]]*$' "$parts/$launch" || grep -q '^1\.\.[0-9]' "$log" || finished=0
+		if [ $code -ne 0 ] || grep -q '^not ok' "$log" || [ $finished -eq 0 ]; then
 			[ $code -eq 142 ] && echo "    timed out after ${timeout}s"
+			[ $code -eq 0 ] && [ $finished -eq 0 ] && echo "    the app quit before the script finished"
 			echo "    exit code $code; stderr in $log.stderr"
 			result=fail
 			break

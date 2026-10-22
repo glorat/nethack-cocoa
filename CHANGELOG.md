@@ -16,12 +16,14 @@ Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [r
 
 ### Changed
 
+- After a crash, the next launch offers to recover the game instead of only to destroy it.
 - A tile set that can't be used says why.
 - The tile size no longer has to be in a tile set's file name.
 
 ### Fixed
 
 - A map tooltip no longer stays on screen and keeps the app open after saving and quitting.
+- Fewer crashes: most errors in the app's own windows no longer end the game.
 
 ## 5.0.0-6 (2026-10-19)
 

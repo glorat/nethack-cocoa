@@ -386,6 +386,22 @@ static CFAbsoluteTime s_loadTime, s_launchTime;
 	segmentStart = CFAbsoluteTimeGetCurrent();
 }
 
+// some questions come before play starts, e.g. what to do with the game a crash left behind
+- (void)answerBeforeStart:(NSString *)keys
+{
+	NSDate * deadline = [NSDate dateWithTimeIntervalSinceNow:60];
+	while ( ![self waitForIdle] || !OnMain(^id{ return [self dialogWindow]; }) ) {
+		if ( [deadline timeIntervalSinceNow] < 0 )
+			[self bailOut:@"the game asked nothing before it started"];
+		usleep(1000);
+	}
+	OnMain(^id{
+		[NSApp activateIgnoringOtherApps:YES];
+		return nil;
+	});
+	[self typeText:keys];
+}
+
 // events reach the app in order, so once this one arrives the earlier ones have
 - (void)waitForPostedEvents
 {
@@ -1111,6 +1127,19 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 	[self say:[NSString stringWithFormat:@"# snapshot %@/%@.png", dir, name]];
 }
 
+// the message window throws while it holds its lock, as it did for messages ending in "you"
+- (void)throwOnMessage:(NSString *)text
+{
+	SEL sel = NSSelectorFromString(@"stringReferencesHero:");
+	Method m = class_getInstanceMethod(NhWindow.class, sel);
+	BOOL (*original)(id, SEL, NSString *) = (BOOL (*)(id, SEL, NSString *))method_getImplementation(m);
+	method_setImplementation(m, imp_implementationWithBlock(^BOOL(id window, NSString * s) {
+		if ( [s containsString:text] )
+			[NSException raise:NSRangeException format:@"thrown by the test on \"%@\"", text];
+		return original(window, sel, s);
+	}));
+}
+
 - (void)expectExit
 {
 	[self waitForPostedEvents];
@@ -1123,7 +1152,7 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 - (void)run
 {
 	@autoreleasepool {
-		[self waitForGameStart];
+		BOOL started = NO;
 		for ( NSString * raw in lines ) {
 			++lineNumber;
 			NSString * line = [raw stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
@@ -1133,6 +1162,14 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 			NSString * command = space.location == NSNotFound ? line : [line substringToIndex:space.location];
 			NSString * rest = space.location == NSNotFound ? @"" : [line substringFromIndex:space.location + 1];
 
+			if ( [command isEqualToString:@"answer"] && !started ) {
+				[self answerBeforeStart:rest];
+				continue;
+			}
+			if ( !started ) {
+				[self waitForGameStart];
+				started = YES;
+			}
 			if ( [command isEqualToString:@"check"] ) {
 				CFAbsoluteTime before = CFAbsoluteTimeGetCurrent();
 				[self check:rest];
@@ -1154,6 +1191,15 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 			if ( [command isEqualToString:@"pause"] ) {
 				usleep((useconds_t)(rest.doubleValue * 1e6));
 				continue;
+			}
+			if ( [command isEqualToString:@"throw-on-message"] ) {
+				[self throwOnMessage:rest];
+				continue;
+			}
+			if ( [command isEqualToString:@"die"] ) {
+				// as a crash would: no save, and the game's files are left behind
+				fflush(stdout);
+				_exit(0);
 			}
 			if ( [command isEqualToString:@"expect-exit"] ) {
 				[self expectExit];
@@ -1209,6 +1255,8 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 				[self say:[NSString stringWithFormat:@"# timing line %lu %.3f (delivery %.3f, game %.3f, screen %.3f, driver %.3f): %@",
 						   (unsigned long)lineNumber, total, lineTimes[0], lineTimes[1], lineTimes[2], driver, line]];
 		}
+		if ( !started )
+			[self waitForGameStart];
 		[self finish];
 	}
 }

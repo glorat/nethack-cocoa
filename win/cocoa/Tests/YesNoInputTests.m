@@ -57,6 +57,9 @@ static YesNoResult Type(YesNoInput * input, NSString * keys)
 	XCTAssertEqualObjects([Input(@":oibrs nq or ?", 'q') labelForAnswer:'?'], @"Help");
 	XCTAssertEqualObjects([Input(@"rl", 0) labelForAnswer:'l'], @"Left");
 	XCTAssertEqualObjects([Input(@"hsq", 0) labelForAnswer:'s'], @"Spin a web");
+	XCTAssertEqualObjects([Input(@"ynr", 'n') labelForAnswer:'y'], @"Destroy");
+	XCTAssertEqualObjects([Input(@"ynr", 'n') labelForAnswer:'r'], @"Recover");
+	XCTAssertEqualObjects([Input(@"ynr", 'n') labelForAnswer:'n'], @"Cancel");
 }
 
 -(void)testOtherAnswerSetsShowTheirOwnCharacters

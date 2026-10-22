@@ -1,0 +1,17 @@
+# After a crash, the next launch offers to recover the game from its last checkpoint.
+@options role:Priest,race:human,gender:female,align:neutral
+
+type T
+pick small shield
+check status.ac == 8
+type S
+expect-exit
+@relaunch
+# restoring writes a checkpoint, which is what recovery starts from
+check messages contains welcome back
+die
+@relaunch
+answer r
+check messages contains welcome back
+check status.ac == 8
+check wearing.shield == shield

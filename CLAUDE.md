@@ -26,7 +26,7 @@ Gotchas:
 - `NHDEFS` in the Makefile must match the feature flags `util/tilemap` sees, `NOMAIL` especially. A mismatch doesn't fail the build; it misaligns the glyph→tile map and shows the wrong tiles. `DEFAULT_WINDOW_SYS`, `NOCWD_ASSUMPTIONS`, `SYSCF`, `DLB` and `NOMAIL` come from `NHDEFS`, not `config.h`.
 - Include order is `-I. -IiHack -I$(TOP)/include` because the Cocoa `TileSet.h` and core `tileset.h` collide on the case-insensitive filesystem.
 - New core source files in a future upstream merge must be added to `CORE_SRC`.
-- Make doesn't notice a change to `MACOSX_DEPLOYMENT_TARGET` (12.0, the lowest Xcode 27's SDK supports), `ARCHFLAGS` or `VERSION`: run `make -C win/cocoa clean` first.
+- Make doesn't notice a change to `NHDEFS`, `MACOSX_DEPLOYMENT_TARGET` (12.0, the lowest Xcode 27's SDK supports), `ARCHFLAGS` or `VERSION`: run `make -C win/cocoa clean` first.
 - Local builds are for this Mac's architecture; releases pass `ARCHFLAGS="-arch arm64 -arch x86_64"`.
 - The painted sheets `Resources/tiles/tiles64.png` and `tiles128.png` are in Git LFS. Without `git lfs` a checkout has pointer files there, and the app rejects them as tile sets.
 - `win/cocoa/Makefile` matches the top-level `.gitignore`'s `Makefile` rule; it is tracked, so new copies need `git add -f`.
@@ -44,7 +44,7 @@ Releases are made by tag only, never by pushes to `main`. Tags are `v<NetHack ve
 
 **Two threads.** `NetHackCocoaAppDelegate` starts a background `NSThread` that calls `unixmain()` (upstream's `sys/unix/unixmain.c` `main`, renamed under `COCOA_GRAPHICS`). The game loop runs there, not on the main thread. The main thread runs AppKit.
 
-**Window-port bridge.** `wincocoa.m` defines the `cocoa_procs` `struct window_procs` table (`cocoa_*` functions declared in `wincocoa.h`; the port id is `wp_cocoa`). Status uses the core's `genl_status_*` routines, which feed the old two-line bottom line that `StatsView` parses. The core calls these functions on the game thread. They store state in model objects from `iHack/` (`NhWindow`, `NhMapWindow`, `NhMenuWindow`, `NhStatusWindow`, kept in `g_WindowDict` keyed by `winid`) and then ask `MainWindowController` to show or refresh the UI. When upstream changes the `window_procs` signatures, compare against `win/tty/wintty.c` and `include/winprocs.h`.
+**Window-port bridge.** `wincocoa.m` defines the `cocoa_procs` `struct window_procs` table (`cocoa_*` functions declared in `wincocoa.h`; the port id is `wp_cocoa`). Status uses the core's `genl_status_*` routines, which feed the old two-line bottom line that `StatsView` parses. The core calls these functions on the game thread. They store state in model objects from `iHack/` (`NhWindow`, `NhMapWindow`, `NhMenuWindow`, `NhStatusWindow`, kept in `g_WindowDict` keyed by `winid`) and then ask `MainWindowController` to show or refresh the UI. When upstream changes the `window_procs` signatures, compare against `win/tty/wintty.c` and `include/winprocs.h`. The table holds `guarded_cocoa_*` wrappers (the `GUARDED` lines above it), which catch an Objective-C exception so that it never unwinds through the core; a new proc needs one too. Code that holds a lock where it could throw must release it in `@finally`, as `-[NhWindow print:attr:]` does.
 
 **Hopping to the main thread.** `MainWindowController` methods invoked from the game thread check `[NSThread isMainThread]` and re-dispatch themselves with `performSelectorOnMainThread:` (some `waitUntilDone:YES`, some `NO`). Any new UI entry point called from `wincocoa.m` must follow the same pattern.
 

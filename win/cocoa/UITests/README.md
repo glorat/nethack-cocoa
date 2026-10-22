@@ -71,6 +71,9 @@ Each step waits for the game to be waiting for input again before the next one.
 | `click map-unexplored` | Click an unexplored square at least four columns from the hero |
 | `choose <Menu>/<Item>` | Choose a menu bar item, e.g. `View/Tile Set/tiles64.png`; fails if it's disabled |
 | `expect-exit` | The app should quit by itself |
+| `die` | The app dies on the spot, as in a crash, leaving the game's files behind |
+| `answer <keys>` | Before play starts: type the answer to the question the game is asking (only as a launch's first steps) |
+| `throw-on-message <text>` | From now on the message window throws an exception while showing a message containing `text` |
 | `check <key> <op> <value>` | Ops: `==` `!=` `contains` `!contains` `matches` (regex) `>=` `<=`; `""` is empty |
 | `print <key>` / `snapshot <name>` / `pause <s>` | For writing and debugging tests |
 

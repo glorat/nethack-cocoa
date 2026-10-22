@@ -56,6 +56,8 @@
 					@"s" : @"Stash one item", @"n" : @"Next container", @"q" : @"Quit", @"?" : @"Help" };
 	} else if ( [choices isEqualToString:@"rl"] ) {
 		labels = @{ @"r" : @"Right", @"l" : @"Left" };
+	} else if ( [choices isEqualToString:@"ynr"] ) {
+		labels = @{ @"y" : @"Destroy", @"r" : @"Recover", @"n" : @"Cancel" };
 	} else if ( [choices hasPrefix:@"hs"] ) {
 		labels = @{ @"h" : @"Hide", @"s" : @"Spin a web", @"q" : @"Quit" };
 	} else if ( [_answers rangeOfCharacterFromSet:[[NSCharacterSet characterSetWithCharactersInString:@"ynaqm"] invertedSet]].location == NSNotFound ) {

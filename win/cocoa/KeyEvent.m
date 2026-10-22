@@ -37,6 +37,8 @@ int NhKeyFromEvent(NSEvent * keyEvent, const char * directions)
 	} else {
 		// "real" keys
 		NSString * chars = [keyEvent charactersIgnoringModifiers];
+		if ( chars.length == 0 )
+			return 0;
 		NSUInteger modifier = [keyEvent modifierFlags];
 		key = [chars characterAtIndex:0];
 		

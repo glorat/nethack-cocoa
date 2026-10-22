@@ -56,6 +56,93 @@
 
 #define kNetHackOptions (@"kNetHackOptions")
 
+// An exception here is a bug in this port's own code, which only touches its own state,
+// so play can go on without the window update that failed. It must not unwind through the core.
+static void CaughtException(NSException * e, const char * proc)
+{
+	static CFAbsoluteTime burstStart;
+	static int burst;
+	CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+	if ( now - burstStart > 1 ) {
+		burstStart = now;
+		burst = 0;
+	}
+	NSLog(@"%s: %@\n%@", proc, e, e.callStackSymbols);
+	// one that keeps happening would only spin, e.g. a key read that always fails returning Esc forever
+	if ( ++burst > 20 )
+		@throw e;
+}
+
+#define GUARDED(proc, params, args) \
+static void guarded_##proc params { \
+	@try { proc args; } \
+	@catch (NSException * e) { CaughtException(e, #proc); } \
+}
+
+#define GUARDED_RETURNING(type, proc, params, args, fallback) \
+static type guarded_##proc params { \
+	@try { return proc args; } \
+	@catch (NSException * e) { CaughtException(e, #proc); fallback; } \
+}
+
+GUARDED(cocoa_init_nhwindows, (int * argc, char ** argv), (argc, argv))
+GUARDED(cocoa_player_selection, (void), ())
+GUARDED(cocoa_askname, (void), ())
+GUARDED(cocoa_get_nh_event, (void), ())
+GUARDED(cocoa_exit_nhwindows, (const char * str), (str))
+GUARDED(cocoa_suspend_nhwindows, (const char * str), (str))
+GUARDED(cocoa_resume_nhwindows, (void), ())
+GUARDED_RETURNING(winid, cocoa_create_nhwindow, (int type), (type), return WIN_ERR)
+GUARDED(cocoa_clear_nhwindow, (winid wid), (wid))
+GUARDED(cocoa_display_nhwindow, (winid wid, boolean block), (wid, block))
+GUARDED(cocoa_destroy_nhwindow, (winid wid), (wid))
+GUARDED(cocoa_curs, (winid wid, int x, int y), (wid, x, y))
+GUARDED(cocoa_putstr, (winid wid, int attr, const char * text), (wid, attr, text))
+GUARDED(cocoa_putmixed, (winid wid, int attr, const char * text), (wid, attr, text))
+GUARDED(cocoa_display_file, (const char * filename, boolean must_exist), (filename, must_exist))
+GUARDED(cocoa_start_menu, (winid wid, unsigned long mbehavior), (wid, mbehavior))
+GUARDED(cocoa_add_menu, (winid wid, const glyph_info * glyphinfo, const ANY_P * identifier, char accelerator,
+						 char group_accel, int attr, int clr, const char * str, unsigned int itemflags),
+		(wid, glyphinfo, identifier, accelerator, group_accel, attr, clr, str, itemflags))
+GUARDED(cocoa_end_menu, (winid wid, const char * prompt), (wid, prompt))
+GUARDED_RETURNING(int, cocoa_select_menu, (winid wid, int how, menu_item ** selected), (wid, how, selected),
+				  *selected = NULL; return -1)
+GUARDED(cocoa_mark_synch, (void), ())
+GUARDED(cocoa_wait_synch, (void), ())
+#ifdef CLIPPING
+GUARDED(cocoa_cliparound, (int x, int y), (x, y))
+#endif
+GUARDED(cocoa_print_glyph, (winid wid, coordxy x, coordxy y, const glyph_info * glyphinfo, const glyph_info * bkglyphinfo),
+		(wid, x, y, glyphinfo, bkglyphinfo))
+GUARDED(cocoa_raw_print, (const char * str), (str))
+GUARDED(cocoa_raw_print_bold, (const char * str), (str))
+GUARDED_RETURNING(int, cocoa_nhgetch, (void), (), return '\033')
+GUARDED_RETURNING(int, cocoa_nh_poskey, (coordxy * x, coordxy * y, int * mod), (x, y, mod), return '\033')
+GUARDED(cocoa_nhbell, (void), ())
+GUARDED_RETURNING(int, cocoa_doprev_message, (void), (), return 0)
+GUARDED_RETURNING(char, cocoa_yn_function, (const char * question, const char * choices, char def), (question, choices, def),
+				  return '\033')
+static void guarded_cocoa_getlin(const char * prompt, char * line)
+{
+	@try { cocoa_getlin(prompt, line); }
+	@catch (NSException * e) { CaughtException(e, "cocoa_getlin"); Strcpy(line, "\033"); }
+}
+GUARDED_RETURNING(int, cocoa_get_ext_cmd, (void), (), return -1)
+GUARDED(cocoa_number_pad, (int num), (num))
+GUARDED(cocoa_delay_output, (void), ())
+GUARDED(cocoa_outrip, (winid wid, int how, time_t when), (wid, how, when))
+GUARDED(cocoa_preference_update, (const char * pref), (pref))
+GUARDED_RETURNING(char *, cocoa_getmsghistory, (boolean init), (init), return NULL)
+GUARDED(cocoa_putmsghistory, (const char * msg, boolean is_restoring), (msg, is_restoring))
+GUARDED(cocoa_status_init, (void), ())
+GUARDED(cocoa_status_finish, (void), ())
+GUARDED(cocoa_status_enablefield, (int fld, const char * nm, const char * fmt, boolean enable), (fld, nm, fmt, enable))
+GUARDED(cocoa_status_update, (int fld, genericptr_t ptr, int chg, int percent, int color, unsigned long * colormasks),
+		(fld, ptr, chg, percent, color, colormasks))
+GUARDED(cocoa_update_inventory, (int arg), (arg))
+GUARDED_RETURNING(win_request_info *, cocoa_ctrl_nhwindow, (winid wid, int request, win_request_info * wri),
+				  (wid, request, wri), return NULL)
+
 struct window_procs cocoa_procs = {
 "cocoa",
 wp_cocoa,
@@ -65,57 +152,57 @@ WC_FONT_MAP|WC_FONTSIZ_MESSAGE|WC_FONTSIZ_STATUS|WC_TILE_FILE|WC_TILE_WIDTH|WC_T
 WC_PLAYER_SELECTION|WC_SPLASH_SCREEN,
 WC2_FLUSH_STATUS,
 {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},   /* color availability */
-cocoa_init_nhwindows,
-cocoa_player_selection,
-cocoa_askname,
-cocoa_get_nh_event,
-cocoa_exit_nhwindows,
-cocoa_suspend_nhwindows,
-cocoa_resume_nhwindows,
-cocoa_create_nhwindow,
-cocoa_clear_nhwindow,
-cocoa_display_nhwindow,
-cocoa_destroy_nhwindow,
-cocoa_curs,
-cocoa_putstr,
-cocoa_putmixed,
-cocoa_display_file,
-cocoa_start_menu,
-cocoa_add_menu,
-cocoa_end_menu,
-cocoa_select_menu,
+guarded_cocoa_init_nhwindows,
+guarded_cocoa_player_selection,
+guarded_cocoa_askname,
+guarded_cocoa_get_nh_event,
+guarded_cocoa_exit_nhwindows,
+guarded_cocoa_suspend_nhwindows,
+guarded_cocoa_resume_nhwindows,
+guarded_cocoa_create_nhwindow,
+guarded_cocoa_clear_nhwindow,
+guarded_cocoa_display_nhwindow,
+guarded_cocoa_destroy_nhwindow,
+guarded_cocoa_curs,
+guarded_cocoa_putstr,
+guarded_cocoa_putmixed,
+guarded_cocoa_display_file,
+guarded_cocoa_start_menu,
+guarded_cocoa_add_menu,
+guarded_cocoa_end_menu,
+guarded_cocoa_select_menu,
 genl_message_menu,
-cocoa_mark_synch,
-cocoa_wait_synch,
+guarded_cocoa_mark_synch,
+guarded_cocoa_wait_synch,
 #ifdef CLIPPING
-cocoa_cliparound,
+guarded_cocoa_cliparound,
 #endif
 #ifdef POSITIONBAR
 donull,
 #endif
-cocoa_print_glyph,
-cocoa_raw_print,
-cocoa_raw_print_bold,
-cocoa_nhgetch,
-cocoa_nh_poskey,
-cocoa_nhbell,
-cocoa_doprev_message,
-cocoa_yn_function,
-cocoa_getlin,
-cocoa_get_ext_cmd,
-cocoa_number_pad,
-cocoa_delay_output,
-cocoa_outrip,
-cocoa_preference_update,
-cocoa_getmsghistory,
-cocoa_putmsghistory,
-cocoa_status_init,
-cocoa_status_finish,
-cocoa_status_enablefield,
-cocoa_status_update,
+guarded_cocoa_print_glyph,
+guarded_cocoa_raw_print,
+guarded_cocoa_raw_print_bold,
+guarded_cocoa_nhgetch,
+guarded_cocoa_nh_poskey,
+guarded_cocoa_nhbell,
+guarded_cocoa_doprev_message,
+guarded_cocoa_yn_function,
+guarded_cocoa_getlin,
+guarded_cocoa_get_ext_cmd,
+guarded_cocoa_number_pad,
+guarded_cocoa_delay_output,
+guarded_cocoa_outrip,
+guarded_cocoa_preference_update,
+guarded_cocoa_getmsghistory,
+guarded_cocoa_putmsghistory,
+guarded_cocoa_status_init,
+guarded_cocoa_status_finish,
+guarded_cocoa_status_enablefield,
+guarded_cocoa_status_update,
 win_can_suspend,
-cocoa_update_inventory,
-cocoa_ctrl_nhwindow,
+guarded_cocoa_update_inventory,
+guarded_cocoa_ctrl_nhwindow,
 };
 
 
@@ -857,7 +944,12 @@ char cocoa_yn_function(const char *question, const char *choices, char def)
 		} else {
 			(void) key2txt((uchar) key, answer);
 		}
-		cocoa_putstr(WIN_MESSAGE, 0, [[text stringByAppendingFormat:@" %s", answer] UTF8String]);
+		// the answer is already taken, so a failed echo mustn't turn it into Esc
+		@try {
+			cocoa_putstr(WIN_MESSAGE, 0, [[text stringByAppendingFormat:@" %s", answer] UTF8String]);
+		} @catch (NSException * e) {
+			CaughtException(e, "cocoa_yn_function");
+		}
 		return key;
 	}
 	
@@ -892,7 +984,11 @@ void cocoa_getlin(const char *prompt, char *line)
 	line[n] = '\0';
 	char logged[BUFSZ * 2];
 	snprintf(logged, sizeof logged, "%s %s", prompt, line[0] == '\033' ? "" : line);
-	cocoa_putstr(WIN_MESSAGE, 0, logged);
+	@try {
+		cocoa_putstr(WIN_MESSAGE, 0, logged);
+	} @catch (NSException * e) {
+		CaughtException(e, "cocoa_getlin");
+	}
 }
 
 int cocoa_get_ext_cmd()

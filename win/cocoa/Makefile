@@ -35,7 +35,7 @@ BUILD_NUMBER ?= 1
 # (NOMAIL in particular), or tile indices in src/tile.c will be off.
 NHDEFS := -DNOTPARMDECL -DDLB -DSYSCF -DSYSCF_FILE=\"sysconf\" -DNOMAIL \
           -DNOCWD_ASSUMPTIONS \
-          -DNOTTYGRAPHICS -DCOCOA_GRAPHICS -DTILES_IN_GLYPHMAP \
+          -DNOTTYGRAPHICS -DCOCOA_GRAPHICS -DTILES_IN_GLYPHMAP -DSELF_RECOVER \
           -DDEFAULT_WINDOW_SYS=\"cocoa\" -DGREPPATH=\"/usr/bin/grep\"
 
 # -MMD writes each object's header dependencies beside it, read back below
