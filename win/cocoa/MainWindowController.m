@@ -48,6 +48,7 @@
 #import "NhStatus.h"
 #import "TileSet.h"
 #import "TileSheet.h"
+#import "OptionsFile.h"
 #import "NetHackCocoaAppDelegate.h"
 #import "EquipmentView.h"
 #import "InventoryView.h"
@@ -569,6 +570,43 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 - (IBAction)showTileSetFolder:(id)sender
 {
 	[[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:NSHomeDirectory() isDirectory:YES]];
+}
+
+// the file the core read, which is ~/.nethackrc unless NETHACKOPTIONS or --nethackrc names another
+-(NSString *)optionsFilePath
+{
+	const char * path = get_configfile();
+	if ( path && *path )
+		return @(path);
+	return [NSHomeDirectory() stringByAppendingPathComponent:@".nethackrc"];
+}
+
+-(void)showOptionsFileProblem:(NSString *)message error:(NSError *)error
+{
+	[self showTileSetProblem:@[message, error.localizedDescription ?: @""]];
+}
+
+- (IBAction)editOptionsFile:(id)sender
+{
+	NSString * path = [self optionsFilePath];
+	NSError * error = nil;
+	if ( !NhCreateOptionsFile(path, &error) ) {
+		[self showOptionsFileProblem:@"The options file couldn't be created." error:error];
+		return;
+	}
+	// it has no extension, so ask for the app that edits plain text rather than whatever claims the file
+	NSWorkspace * workspace = [NSWorkspace sharedWorkspace];
+	NSURL * editor = [workspace URLForApplicationToOpenContentType:UTTypePlainText];
+	if ( editor == nil )
+		editor = [workspace URLForApplicationWithBundleIdentifier:@"com.apple.TextEdit"];
+	[workspace openURLs:@[[NSURL fileURLWithPath:path]] withApplicationAtURL:editor configuration:[NSWorkspaceOpenConfiguration configuration]
+		completionHandler:^(NSRunningApplication * app, NSError * error) {
+		if ( error ) {
+			dispatch_async(dispatch_get_main_queue(), ^{
+				[self showOptionsFileProblem:@"The options file couldn't be opened." error:error];
+			});
+		}
+	}];
 }
 
 - (IBAction)selectTileSet:(id)sender

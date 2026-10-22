@@ -79,6 +79,7 @@
 - (IBAction)enableAsciiMode:(id)sender;
 - (IBAction)importTileSet:(id)sender;
 - (IBAction)showTileSetFolder:(id)sender;
+- (IBAction)editOptionsFile:(id)sender;
 - (IBAction)zoomIn:(id)sender;
 - (IBAction)zoomOut:(id)sender;
 - (IBAction)actualSize:(id)sender;

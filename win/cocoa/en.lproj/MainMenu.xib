@@ -627,6 +627,12 @@
                                     <action selector="performMenuAction:" target="943" id="1121"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Edit Options File..." id="opt-edit-file">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="editOptionsFile:" target="943" id="opt-edit-file-action"/>
+                                </connections>
+                            </menuItem>
                             <menuItem title="Toggle Auto Pickup" identifier="autopickup" keyEquivalent="2" id="1039">
                                 <modifierMask key="keyEquivalentModifierMask" shift="YES"/>
                                 <connections>
