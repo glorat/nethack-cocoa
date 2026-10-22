@@ -2,7 +2,7 @@
 
 Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [release notes](https://www.nethack.org/).
 
-## Unreleased
+## 5.0.0-7 (2026-10-22)
 
 ### Added
 
