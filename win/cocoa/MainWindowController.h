@@ -50,7 +50,6 @@
 	AVSpeechSynthesizer						*	voice;
 	NSMutableArray							*	voiceQueue;
 	
-	NSMutableArray							*	userTiles;
 	NSString 								*	_tileSetName;
 
 	IBOutlet MainView						*	mainView;
@@ -78,7 +77,8 @@
 - (IBAction)performMenuAction:(id)sender;
 - (IBAction)terminateApplication:(id)sender;
 - (IBAction)enableAsciiMode:(id)sender;
-- (IBAction)addTileSet:(id)sender;
+- (IBAction)importTileSet:(id)sender;
+- (IBAction)showTileSetFolder:(id)sender;
 - (IBAction)zoomIn:(id)sender;
 - (IBAction)zoomOut:(id)sender;
 - (IBAction)actualSize:(id)sender;

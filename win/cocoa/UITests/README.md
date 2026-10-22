@@ -68,7 +68,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `click map <dx> <dy>` | Click the map square at that offset from the hero |
 | `click map-near <name>` | Click an adjacent square showing `name` |
 | `click map-unexplored` | Click an unexplored square at least four columns from the hero |
-| `choose <Menu>/<Item>` | Choose a menu bar item; fails if it's disabled |
+| `choose <Menu>/<Item>` | Choose a menu bar item, e.g. `View/Tile Set/tiles64.png`; fails if it's disabled |
 | `expect-exit` | The app should quit by itself |
 | `check <key> <op> <value>` | Ops: `==` `!=` `contains` `!contains` `matches` (regex) `>=` `<=`; `""` is empty |
 | `print <key>` / `snapshot <name>` / `pause <s>` | For writing and debugging tests |

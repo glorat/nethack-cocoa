@@ -1,0 +1,10 @@
+# tile_file chooses the tile set at launch, and the Tile Set menu switches it.
+@options role:Valkyrie,race:human,gender:female,align:neutral
+@config OPTIONS=tile_file:tiles64.png
+
+check tileset.size == 64x64
+check dialog == none
+
+choose View/Tile Set/tiles16.bmp
+check tileset.size == 16x16
+

@@ -23,6 +23,7 @@
  */
 
 #import <AVFoundation/AVFoundation.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #import "MainWindowController.h"
 #import "MainView.h"
@@ -46,6 +47,7 @@
 #import "StatsView.h"
 #import "NhStatus.h"
 #import "TileSet.h"
+#import "TileSheet.h"
 #import "NetHackCocoaAppDelegate.h"
 #import "EquipmentView.h"
 #import "InventoryView.h"
@@ -59,6 +61,7 @@ static MainWindowController* instance;
 
 static const CGFloat kInventoryWidth = 280;
 static const CGFloat kMinWindowWidth = 637;
+static NSString * const kDefaultTileSet = @"tiles128.png";
 
 @implementation MainWindowController
 
@@ -120,20 +123,6 @@ static const CGFloat kMinWindowWidth = 637;
 			}
 		}
 	}
-}
-
--(NSSize)tileSetSizeFromName:(NSString *)name
-{
-	int dx, dy;
-	if ( sscanf([name UTF8String], "%*[^0-9]%dx%d.%*s", &dx, &dy ) == 2 ) {
-		// fully described
-	} else if ( sscanf([name UTF8String], "%*[^0-9]%d.%*s", &dx ) == 1 ) {
-		dy = dx;
-	} else {
-		dx = dy = 16;
-	}
-	NSSize size = NSMakeSize( dx, dy );
-	return size;
 }
 
 - (void)awakeFromNib {
@@ -253,15 +242,19 @@ static const CGFloat kMinWindowWidth = 637;
 		
 		iflags.wc_ascii_map = [[NSUserDefaults standardUserDefaults] boolForKey:@"UseAscii"];
 		
-		// set defaults if no user preference
+		// tile_file overrides the default, as the Guidebook says, so it wins over the menu's choice
+		if ( iflags.wc_tile_file ) {
+			tileSetName = [self tileSetNameForOption:[NSString stringWithUTF8String:iflags.wc_tile_file]];
+		}
 		if ( tileSetName == nil ) {
-			tileSetName = @"tiles128.png";
+			tileSetName = kDefaultTileSet;
 		}
-		NSSize size = [self tileSetSizeFromName:tileSetName];
-		if ( ![self setTileSet:tileSetName size:size] ) {
-
+		NSString * problem = [self setTileSet:tileSetName];
+		if ( problem ) {
+			[self setTileSet:kDefaultTileSet];
+			NSString * message = [NSString stringWithFormat:@"The tile set \"%@\" can't be used, so the default tile set is shown instead.", [tileSetName lastPathComponent]];
+			[self performSelector:@selector(showTileSetProblem:) withObject:@[message, problem] afterDelay:0];
 		}
-		_tileSetName = tileSetName;
 
 		NSFont * font = [NSFont fontWithName:asciiFontName size:asciiFontSize];
 		if ( font == nil ) {
@@ -311,8 +304,7 @@ static const CGFloat kMinWindowWidth = 637;
 	[[NSUserDefaults standardUserDefaults] setFloat:[mainView zoom] forKey:@"MapZoom"];
 	[[NSUserDefaults standardUserDefaults] setBool:self.useSpeech forKey:@"UseSpeech"];
 	
-	// save user defined tile sets
-	[[NSUserDefaults standardUserDefaults] setObject:userTiles forKey:@"UserTileSets"];
+	[[NSUserDefaults standardUserDefaults] removeObjectForKey:@"UserTileSets"];
 	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -449,139 +441,173 @@ static const CGFloat kMinWindowWidth = 637;
 }
 
 
--(NSImage *)imageForTileSetName:(NSString *)tileSetName size:(NSSize)size
+// Built-in tile sets are named by file name, the player's by path: "~/" is the app's own folder,
+// the one that holds .nethackrc
+-(NSString *)pathOfTileSet:(NSString *)name
 {
-	NSImage *tilesetImage = [NSImage imageNamed:tileSetName];
-	if ( tilesetImage == nil ) {
-		tileSetName = [tileSetName stringByExpandingTildeInPath];
-		NSURL * url = [NSURL fileURLWithPath:tileSetName isDirectory:NO];
-		tilesetImage = [[NSImage alloc] initByReferencingURL:url];
-		if ( tilesetImage == nil ) {
-			return nil;
-		}
-	}
-
-	// make sure dimensions work
-	NSSize imageSize = [TileSet pixelSizeOfImage:tilesetImage];
-	int count = (imageSize.width / size.width) * (imageSize.height / size.height);
-	NSLog(@"%@: %ld", tileSetName, (long)count);
-	extern int total_tiles_used;
-	if ( count < total_tiles_used ) {
-		// not enough images
-		return nil;
-	}
-	return tilesetImage;
+	if ( [name hasPrefix:@"~"] || [name isAbsolutePath] )
+		return [name stringByExpandingTildeInPath];
+	return [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:name];
 }
 
--(BOOL)setTileSet:(NSString *)tileSetName size:(NSSize)size
+-(NSString *)tileSetNameForOption:(NSString *)tileFile
 {
-	NSImage *tilesetImage = [self imageForTileSetName:tileSetName size:size];
-	if ( tilesetImage == nil )
-		return NO;
+	if ( [tileFile hasPrefix:@"~"] || [tileFile isAbsolutePath] )
+		return [[tileFile stringByExpandingTildeInPath] stringByAbbreviatingWithTildeInPath];
+	NSString * mine = [@"~" stringByAppendingPathComponent:tileFile];
+	if ( [[NSFileManager defaultManager] fileExistsAtPath:[mine stringByExpandingTildeInPath]] )
+		return mine;
+	return tileFile;
+}
 
-	TileSet *tileSet = [[TileSet alloc] initWithImage:tilesetImage tileSize:size];
+-(NSString *)problemWithSheetAtPath:(NSString *)path tileSize:(NSSize *)tileSize
+{
+	extern int total_tiles_used;
+	NSSize pixels = NhPixelSizeOfImageFile(path);
+	NSSize size = NhTileSizeOfSheet(path, pixels);
+	if ( tileSize )
+		*tileSize = size;
+	return NhTileSheetProblem(pixels, size, total_tiles_used);
+}
+
+// returns why the tile set can't be used, or nil once it is in use
+-(NSString *)setTileSet:(NSString *)tileSetName
+{
+	NSString * path = [self pathOfTileSet:tileSetName];
+	NSSize size;
+	NSString * problem = [self problemWithSheetAtPath:path tileSize:&size];
+	if ( problem )
+		return problem;
+	NSImage * image = [[NSImage alloc] initByReferencingFile:path];
+	if ( image == nil || !image.isValid )
+		return @"It isn't an image that can be read.";
+
+	TileSet *tileSet = [[TileSet alloc] initWithImage:image tileSize:size];
 	[TileSet setInstance:tileSet];
 
 	_tileSetName = tileSetName;
 
-	return YES;
+	return nil;
 }
 
-- (IBAction)addTileSet:(id)sender
+-(void)showTileSetProblem:(NSArray<NSString *> *)messageAndDetail
+{
+	NSAlert * alert = [[NSAlert alloc] init];
+	alert.messageText = messageAndDetail[0];
+	alert.informativeText = messageAndDetail[1];
+	if ( self.window.isVisible && self.window.attachedSheet == nil )
+		[alert beginSheetModalForWindow:self.window completionHandler:nil];
+	else
+		[alert runModal];
+}
+
+-(void)useTileSet:(NSString *)name
+{
+	NSString * problem = [self setTileSet:name];
+	if ( problem ) {
+		NSString * message = [NSString stringWithFormat:@"\"%@\" can't be used as a tile set.", [name lastPathComponent]];
+		[self showTileSetProblem:@[message, problem]];
+		return;
+	}
+
+	// put us in tile mode
+	[mainView enableAsciiMode:NO];
+	[asciiModeMenuItem setState:NSControlStateValueOff];
+	[equipmentView updateInventory];
+}
+
+- (IBAction)importTileSet:(id)sender
 {
 	NSOpenPanel * panel = [NSOpenPanel openPanel];
 	[panel setCanChooseFiles:YES];
 	[panel setCanChooseDirectories:NO];
 	[panel setAllowsMultipleSelection:YES];
-	[panel runModal];
-	NSArray * result = [panel URLs];
-	for ( NSURL * url in result ) {
-		NSString * path = [url path];
-		path = [path stringByAbbreviatingWithTildeInPath];
-		NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:path action:@selector(selectTileSet:) keyEquivalent:@""];
-		[item setTarget:self];
-		[tileSetMenu addItem:item];
-		if ( userTiles == nil ) {
-			userTiles = [[NSMutableArray alloc] initWithCapacity:1];
+	panel.allowedContentTypes = @[UTTypePNG, UTTypeBMP];
+	panel.message = @"Choose tile sets made for NetHack 5.0. They are copied into the folder that holds .nethackrc.";
+	if ( [panel runModal] != NSModalResponseOK )
+		return;
+
+	NSFileManager * fm = [NSFileManager defaultManager];
+	NSString * imported = nil;
+	NSMutableArray * problems = [NSMutableArray array];
+	for ( NSURL * url in [panel URLs] ) {
+		NSString * file = [url lastPathComponent];
+		NSString * name = [@"~" stringByAppendingPathComponent:file];
+		NSString * destination = [name stringByExpandingTildeInPath];
+		NSString * problem = [self problemWithSheetAtPath:url.path tileSize:NULL];
+		if ( problem ) {
+			[problems addObject:[NSString stringWithFormat:@"%@: %@", file, problem]];
+			continue;
 		}
-		[userTiles addObject:path];
+		if ( ![[url.path stringByStandardizingPath] isEqualToString:[destination stringByStandardizingPath]] ) {
+			if ( [fm fileExistsAtPath:destination] ) {
+				NSAlert * alert = [[NSAlert alloc] init];
+				alert.messageText = [NSString stringWithFormat:@"A tile set named \"%@\" is already imported. Replace it?", file];
+				[alert addButtonWithTitle:@"Replace"];
+				[alert addButtonWithTitle:@"Cancel"];
+				if ( [alert runModal] != NSAlertFirstButtonReturn )
+					continue;
+				[fm removeItemAtPath:destination error:NULL];
+			}
+			NSError * error = nil;
+			if ( ![fm copyItemAtPath:url.path toPath:destination error:&error] ) {
+				[problems addObject:[NSString stringWithFormat:@"%@: %@", file, error.localizedDescription]];
+				continue;
+			}
+		}
+		imported = name;
+	}
+
+	if ( imported )
+		[self useTileSet:imported];
+	if ( problems.count ) {
+		NSString * message = problems.count == 1 ? @"A tile set couldn't be imported." : @"Some tile sets couldn't be imported.";
+		[self showTileSetProblem:@[message, [problems componentsJoinedByString:@"\n\n"]]];
 	}
 }
+
+- (IBAction)showTileSetFolder:(id)sender
+{
+	[[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:NSHomeDirectory() isDirectory:YES]];
+}
+
 - (IBAction)selectTileSet:(id)sender
 {
-	NSMenuItem * item = sender;
-	NSString * name = [item title];
-	NSSize size = [self tileSetSizeFromName:name];
-
-	BOOL ok = [self setTileSet:name size:size];
-	if ( ok ) {
-
-		// put us in tile mode
-		[mainView enableAsciiMode:NO];
-		[asciiModeMenuItem setState:NSControlStateValueOff];
-		[equipmentView updateInventory];
-		
-	} else {
-		NSAlert * alert = [[NSAlert alloc] init];
-		alert.messageText = @"The tile set is not valid for this version of NetHack";
-		[alert runModal];
-	}
+	[self useTileSet:[sender representedObject]];
 }
 
-- (void)createTileSetListInMenu:(NSMenu *)menu 
+-(void)addTileSetItem:(NSString *)name title:(NSString *)title toMenu:(NSMenu *)menu
 {
-	int count = [[menu itemArray] count];
-	if ( count > 3 ) {
-		// already initialized
-		return;
+	NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:title action:@selector(selectTileSet:) keyEquivalent:@""];
+	[item setTarget:self];
+	item.representedObject = name;
+	item.state = !iflags.wc_ascii_map && [name isEqualToString:_tileSetName] ? NSControlStateValueOn : NSControlStateValueOff;
+	[menu addItem:item];
+}
+
+// rebuilt each time it opens, so files added to or removed from the folder show up
+- (void)createTileSetListInMenu:(NSMenu *)menu
+{
+	NSInteger fixed = 0;
+	while ( fixed < menu.numberOfItems && ![menu itemAtIndex:fixed].isSeparatorItem )
+		++fixed;
+	++fixed;
+	while ( menu.numberOfItems > fixed )
+		[menu removeItemAtIndex:fixed];
+
+	// the bundle also holds small images such as petmark.png, so only working sheets are listed
+	NSString * bundleFolder = [[NSBundle mainBundle] resourcePath];
+	for ( NSString * file in NhTileSheetsInFolder(bundleFolder) ) {
+		if ( [self problemWithSheetAtPath:[bundleFolder stringByAppendingPathComponent:file] tileSize:NULL] == nil )
+			[self addTileSetItem:file title:file toMenu:menu];
 	}
 
-	NSMutableArray * files = [NSMutableArray array];
-	
-	// get list of builtin tiles
-	NSString * tileFolder = [[NSBundle mainBundle] resourcePath];
-	for ( NSString * name in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:tileFolder error:NULL] ) {
-		NSString * ext = [name pathExtension];
-		if ( [ext isEqualToString:@"png"] || [ext isEqualToString:@"bmp"] ) {
-			// we have an image file, just make sure it is larger than a single image (petmark)
-			NSString * path = [tileFolder stringByAppendingPathComponent:name];
-			NSDictionary * attr = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL];
-			if ( attr && [attr fileSize] >= 10000 ) {
-
-				NSSize size = [self tileSetSizeFromName:name];
-				NSImage * image = [self imageForTileSetName:name size:size];
-				if ( image ) {
-					[files addObject:name];
-				}
-			}				
-		}
-	}
-
-	// add user defined tile file
-	if (iflags.wc_tile_file) {
-		[files addObject:[NSString stringWithUTF8String:iflags.wc_tile_file]];
-	}
-		
-	// get user defined tiles
-	userTiles = [[[NSUserDefaults standardUserDefaults] objectForKey:@"UserTileSets"] mutableCopy];
-	for ( int idx = 0; idx < [userTiles count]; ++idx ) {		
-		NSString * path = [userTiles objectAtIndex:idx];
-		NSString * fullPath = [path stringByExpandingTildeInPath];
-		NSDictionary * attr = [[NSFileManager defaultManager] attributesOfItemAtPath:fullPath error:NULL];
-		if ( attr ) {
-			[files addObject:path];
-		} else {
-			[userTiles removeObjectAtIndex:idx];
-			--idx;
-		}
-	}
-	
-	// add files
-	for ( NSString * name in files ) {
-		NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:name action:@selector(selectTileSet:) keyEquivalent:@""];
-		[item setTarget:self];
-		[menu addItem:item];
-	}
+	// the player's are all listed, and choosing one that doesn't work says why
+	NSArray * mine = NhTileSheetsInFolder(NSHomeDirectory());
+	if ( mine.count )
+		[menu addItem:[NSMenuItem separatorItem]];
+	for ( NSString * file in mine )
+		[self addTileSetItem:[@"~" stringByAppendingPathComponent:file] title:file toMenu:menu];
 }
 - (void)menuWillOpen:(NSMenu *)menu
 {

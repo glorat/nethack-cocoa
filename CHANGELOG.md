@@ -2,6 +2,19 @@
 
 Changes to NetHack for macOS. Changes to the game itself are in NetHack's own [release notes](https://www.nethack.org/).
 
+## Unreleased
+
+### Added
+
+- View → Tile Set → Import... copies a tile set into the app's folder, so it's still there after a restart.
+- The Tile Set menu lists every tile set in the folder that holds `.nethackrc`, and Show Tile Sets Folder opens it.
+- The `tile_file` option chooses the tile set at launch.
+
+### Changed
+
+- A tile set that can't be used says why.
+- The tile size no longer has to be in a tile set's file name.
+
 ## 5.0.0-6 (2026-10-19)
 
 ### Added

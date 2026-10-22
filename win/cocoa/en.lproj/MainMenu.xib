@@ -686,10 +686,16 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" id="1114">
                                     <items>
-                                        <menuItem title="Add..." id="1115">
+                                        <menuItem title="Import..." id="1115">
                                             <modifierMask key="keyEquivalentModifierMask"/>
                                             <connections>
-                                                <action selector="addTileSet:" target="943" id="1127"/>
+                                                <action selector="importTileSet:" target="943" id="1127"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Show Tile Sets Folder" id="ts-show-folder">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="showTileSetFolder:" target="943" id="ts-show-folder-action"/>
                                             </connections>
                                         </menuItem>
                                         <menuItem isSeparatorItem="YES" id="1123"/>

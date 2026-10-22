@@ -45,7 +45,8 @@ CFLAGS   := $(COMMONFLAGS) -std=c99 -w
 OBJCFLAGS := $(COMMONFLAGS) -fobjc-arc -Wno-deprecated-declarations \
              -include NetHackCocoa_Prefix.pch
 LDFLAGS  := $(ARCHFLAGS) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) \
-            -framework Cocoa -framework AVFoundation -framework Carbon
+            -framework Cocoa -framework AVFoundation -framework Carbon \
+            -framework ImageIO -framework UniformTypeIdentifiers
 
 CORE_SRC := allmain alloc apply artifact attrib ball bones botl calendar \
 	cfgfiles cmd coloratt date dbridge decl detect dig display dlb do_name \
@@ -179,18 +180,18 @@ run: app
 TEST_BUNDLE := $(BUILD)/CocoaTests.xctest
 TEST_BINARY := $(TEST_BUNDLE)/Contents/MacOS/CocoaTests
 TEST_SRC := $(wildcard Tests/*.m) YesNoInput.m YesNoWindowController.m iHack/NhYnQuestion.m \
-	DirectionWindowController.m KeyEvent.m ExtCommandInput.m ExtCommandWindowController.m InputWindowController.m PlayerName.m iHack/NhStatus.m
+	DirectionWindowController.m KeyEvent.m ExtCommandInput.m ExtCommandWindowController.m InputWindowController.m PlayerName.m iHack/NhStatus.m TileSheet.m
 XCTEST_FW = $(shell $(if $(DEVELOPER_DIR),DEVELOPER_DIR=$(DEVELOPER_DIR)) xcrun --show-sdk-platform-path)/Developer/Library/Frameworks
 
 test: $(TEST_BINARY)
 	xcrun xctest $(TEST_BUNDLE)
 
 $(TEST_BINARY): $(TEST_SRC) $(wildcard Tests/*.h) YesNoInput.h YesNoWindowController.h \
-	iHack/NhYnQuestion.h DirectionWindowController.h KeyEvent.h ExtCommandInput.h ExtCommandWindowController.h InputWindowController.h PlayerName.h iHack/NhStatus.h Tests/Info.plist | $(BUILD)
+	iHack/NhYnQuestion.h DirectionWindowController.h KeyEvent.h ExtCommandInput.h ExtCommandWindowController.h InputWindowController.h PlayerName.h iHack/NhStatus.h TileSheet.h Tests/Info.plist | $(BUILD)
 	@mkdir -p $(@D)
 	cp Tests/Info.plist $(TEST_BUNDLE)/Contents/
 	$(CC) -arch $(shell uname -m) -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET) -fobjc-arc \
-		-bundle -I. -IiHack -ITests '-DCOCOA_SOURCE_DIR="$(CURDIR)"' -F$(XCTEST_FW) -framework XCTest -framework Cocoa -framework Carbon \
+		-bundle -I. -IiHack -ITests '-DCOCOA_SOURCE_DIR="$(CURDIR)"' -F$(XCTEST_FW) -framework XCTest -framework Cocoa -framework Carbon -framework ImageIO \
 		-Wl,-rpath,$(XCTEST_FW) $(TEST_SRC) -o $@
 
 # A copy of the app with the test driver linked in, its own bundle ID (so it

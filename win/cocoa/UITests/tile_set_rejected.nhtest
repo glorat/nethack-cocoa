@@ -1,0 +1,8 @@
+# A tile_file that can't be used falls back to the default tile set and says why.
+@options role:Valkyrie,race:human,gender:female,align:neutral
+@config OPTIONS=tile_file:petmark.png
+
+check tileset.size == 128x128
+check dialog.kind == Alert
+check dialog contains petmark.png
+check dialog contains this version of NetHack needs

@@ -1014,11 +1014,20 @@ static BOOL HidesSomething(NSPoint cell)
 {
 	NSString * error = OnMain(^id{
 		NSArray * parts = [path componentsSeparatedByString:@"/"];
-		NSMenu * menu = [NSApp.mainMenu itemWithTitle:parts.firstObject].submenu;
-		[menu update];
-		NSMenuItem * item = [menu itemWithTitle:parts.lastObject];
-		if ( !item )
-			return @"no such menu item";
+		NSMenu * menu = NSApp.mainMenu;
+		NSMenuItem * item = nil;
+		for ( NSString * title in parts ) {
+			if ( item ) {
+				menu = item.submenu;
+				// as when it opens, so menus built on demand (Tile Set) are filled in
+				if ( [menu.delegate respondsToSelector:@selector(menuWillOpen:)] )
+					[menu.delegate menuWillOpen:menu];
+				[menu update];
+			}
+			item = [menu itemWithTitle:title];
+			if ( !item )
+				return @"no such menu item";
+		}
 		if ( !item.enabled )
 			return @"menu item is disabled";
 		[menu performActionForItemAtIndex:[menu indexOfItem:item]];
