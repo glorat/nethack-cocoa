@@ -868,6 +868,11 @@ static NSArray<NSString *> * WearingSlots(void)
 		[window setFrame:frame display:YES];
 		return squeezed ? @"yes" : @"no";
 	}
+	if ( [key isEqualToString:@"window.frame"] ) {
+		NSWindow * window = controller.window;
+		return [NSString stringWithFormat:@"%@ in %@ (min content %g)", NSStringFromRect(window.frame),
+				NSStringFromRect(window.screen.visibleFrame), window.contentMinSize.width];
+	}
 	if ( [key isEqualToString:@"sidebar.width"] ) {
 		[controller.window layoutIfNeeded];
 		return [NSString stringWithFormat:@"%g", [[self ivar:@"inventoryView" of:controller] frame].size.width];

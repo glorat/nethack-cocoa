@@ -97,6 +97,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `menubar.<Menu>/<Item>` | `enabled` or `disabled` |
 | `tileset.size` | e.g. `128x128` |
 | `window.squeezed` | `yes` if the window could be made narrower than its contents need |
+| `window.frame` | The main window's frame, the screen's visible area and the window's minimum content width |
 | `sidebar.width` | The inventory sidebar's width in points |
 | `text.size` | Point size of the message log's text, e.g. `13` |
 | `game.input` | What the game is waiting for: `command`, `position` (a map spot) or `other` (still inside a command) |

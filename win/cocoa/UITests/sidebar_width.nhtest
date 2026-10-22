@@ -6,8 +6,11 @@ check sidebar.width == 280
 drag sidebar-edge 1000
 check sidebar.width == 180
 # the window at its narrowest, with the sidebar at its narrowest, leaves room on any screen
+print window.frame
 narrow-window
+print window.frame
 drag sidebar-edge -60
+print window.frame
 check sidebar.width == 240
 type S
 expect-exit
