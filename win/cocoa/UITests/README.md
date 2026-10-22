@@ -64,6 +64,7 @@ Each step waits for the game to be waiting for input again before the next one.
 | `toward <name>` | Type the direction key toward the adjacent square showing `name` (skipping squares hiding a monster or trap) |
 | `step <name>` | Move the hero onto that square; fails if the hero didn't move |
 | `click sidebar <letter>` | Click an inventory sidebar row |
+| `narrow-window` | Make the main window as narrow as it can be, so widening it doesn't depend on the screen's size |
 | `drag sidebar-edge <dx>` | Drag the inventory sidebar's left edge `dx` points right (negative is left) |
 | `click wearing <slot>` | Click a Wearing panel slot (`weapon`, `shield`, `cloak`, ...) |
 | `click map <dx> <dy>` | Click the map square at that offset from the hero |

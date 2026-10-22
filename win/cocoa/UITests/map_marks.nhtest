@@ -2,13 +2,17 @@
 @options role:Priest,race:human,gender:female,align:neutral,pettype:none
 @wizard
 
-# Two items dropped on one square make a pile, marked once the hero steps off it
-type d
+# Items dropped on one square make a pile, marked once the hero steps off it; three in
+# one turn, so a monster picking one up still leaves a pile
+type D
+pick All types
+key return
 pick garlic
-type d
 pick wolfsbane
+pick holy water
+key return
 step floor of a room
-check map.with.pile contains sprig of wolfsbane
+check map.with.pile matches garlic|wolfsbane|water
 
 # A peaceful monster is marked until it is angered
 key ctrl-g

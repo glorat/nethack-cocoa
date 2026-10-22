@@ -540,12 +540,26 @@ static unsigned short KeyCodeFor(unichar c)
 	}
 }
 
+// as narrow as the window can be, so a test of widening it doesn't depend on the screen's size
+- (void)narrowWindow
+{
+	OnMain(^id{
+		NSWindow * window = self.controller.window;
+		NSRect frame = window.frame;
+		frame.size.width = [window frameRectForContentRect:NSMakeRect(0, 0, window.contentMinSize.width, 1)].size.width;
+		[window setFrame:frame display:YES];
+		[window layoutIfNeeded];
+		return nil;
+	});
+}
+
 // drags the sidebar's left edge dx points to the right, a few steps at a time as a hand would
 - (void)dragSidebarEdge:(CGFloat)dx
 {
 	OnMain(^id{
 		NSView * inventory = [self ivar:@"inventoryView" of:self.controller];
 		NSWindow * window = inventory.window;
+		[window layoutIfNeeded];
 		NSPoint start = [inventory convertPoint:NSMakePoint(2, NSMidY(inventory.bounds)) toView:nil];
 		NSMutableArray * events = [NSMutableArray array];
 		[events addObject:@[ @(NSEventTypeLeftMouseDown), @0 ]];
@@ -854,8 +868,10 @@ static NSArray<NSString *> * WearingSlots(void)
 		[window setFrame:frame display:YES];
 		return squeezed ? @"yes" : @"no";
 	}
-	if ( [key isEqualToString:@"sidebar.width"] )
+	if ( [key isEqualToString:@"sidebar.width"] ) {
+		[controller.window layoutIfNeeded];
 		return [NSString stringWithFormat:@"%g", [[self ivar:@"inventoryView" of:controller] frame].size.width];
+	}
 	if ( [key hasPrefix:@"sidebar."] ) {
 		id inventory = [self ivar:@"inventoryView" of:controller];
 		NSTableView * table = [self ivar:@"tableView" of:inventory];
@@ -1243,6 +1259,8 @@ static void SaveWindowImage(NSWindow * window, NSString * path)
 				[self click:rest];
 			else if ( [command isEqualToString:@"choose"] )
 				[self chooseMenuItem:rest];
+			else if ( [command isEqualToString:@"narrow-window"] )
+				[self narrowWindow];
 			else if ( [command isEqualToString:@"drag"] && [rest hasPrefix:@"sidebar-edge "] )
 				[self dragSidebarEdge:[[rest substringFromIndex:13] doubleValue]];
 			else
