@@ -64,6 +64,7 @@ typedef NS_OPTIONS(NSUInteger, MapMarks) {
 - (void)setZoom:(CGFloat)z;
 - (void)zoomIn;
 - (void)zoomOut;
+- (void)cancelTooltip;
 
 - (IBAction)showContextInfo:(id)sender;
 - (IBAction)doWebSearch:(id)sender;

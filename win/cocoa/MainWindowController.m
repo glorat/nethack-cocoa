@@ -349,6 +349,8 @@ static NSString * const kDefaultTileSet = @"tiles128.png";
 
 -(void)windowWillClose:(NSNotification *)notification
 {
+	// the tooltip is its own window, and would keep the app from quitting after this one closes
+	[mainView cancelTooltip];
 	[self savePreferences];
 
 	// if window closes then application needs to terminate
