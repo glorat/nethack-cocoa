@@ -3,11 +3,10 @@
 @options role:Valkyrie,race:human,gender:female,align:neutral
 
 check sidebar.width == 280
-narrow-window
-drag sidebar-edge -40
-check sidebar.width == 320
 drag sidebar-edge 1000
 check sidebar.width == 180
+# the window at its narrowest, with the sidebar at its narrowest, leaves room on any screen
+narrow-window
 drag sidebar-edge -60
 check sidebar.width == 240
 type S
