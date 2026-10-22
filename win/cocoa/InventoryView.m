@@ -27,13 +27,14 @@ static const CGFloat kMargin		= 10.0;
 - (void)mouseDown:(NSEvent *)event
 {
 	InventoryView * sidebar = self.sidebar;
-	CGFloat startX = event.locationInWindow.x;
+	// in screen coordinates, since the window moves left as it widens
+	CGFloat startX = CGEventGetLocation(event.CGEvent).x;
 	CGFloat startWidth = sidebar.frame.size.width;
 	for ( ;; ) {
 		event = [self.window nextEventMatchingMask:NSEventMaskLeftMouseDragged | NSEventMaskLeftMouseUp];
 		BOOL done = event.type == NSEventTypeLeftMouseUp;
 		if ( sidebar.resize )
-			sidebar.resize(startWidth + startX - event.locationInWindow.x, done);
+			sidebar.resize(startWidth + startX - CGEventGetLocation(event.CGEvent).x, done);
 		if ( done )
 			break;
 	}
